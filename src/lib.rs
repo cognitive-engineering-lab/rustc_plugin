@@ -8,19 +8,8 @@
 extern crate rustc_driver;
 extern crate rustc_interface;
 
-use std::{
-  borrow::Cow,
-  env, fs,
-  ops::Deref,
-  path::{Path, PathBuf},
-  process::{exit, Command, Stdio},
-};
-
 #[doc(hidden)]
 pub use cargo_metadata::camino::Utf8Path;
-
-use rustc_tools_util::VersionInfo;
-use serde::{de::DeserializeOwned, Serialize};
 
 pub use cli::cli_main;
 pub use driver::driver_main;

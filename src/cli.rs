@@ -1,14 +1,10 @@
 use std::{
-  borrow::Cow,
   env, fs,
-  ops::Deref,
-  path::{Path, PathBuf},
+  path::PathBuf,
   process::{exit, Command, Stdio},
 };
 
 use cargo_metadata::camino::Utf8Path;
-use rustc_tools_util::VersionInfo;
-use serde::{de::DeserializeOwned, Serialize};
 
 use super::plugin::{RustcPlugin, PLUGIN_ARGS};
 
@@ -86,7 +82,7 @@ pub fn cli_main<T: RustcPlugin>(plugin: T) {
 fn only_run_on_file(
   cmd: &mut Command,
   file_path: PathBuf,
-  workspace_members: &Vec<&cargo_metadata::Package>,
+  workspace_members: &[&cargo_metadata::Package],
   target_dir: &Utf8Path,
 ) {
   // Find the package and target that corresponds to a given file path

@@ -1,14 +1,11 @@
 use std::{
-  borrow::Cow,
-  env, fs,
+  env,
   ops::Deref,
   path::{Path, PathBuf},
-  process::{exit, Command, Stdio},
+  process::{exit, Command},
 };
 
-use cargo_metadata::camino::Utf8Path;
 use rustc_tools_util::VersionInfo;
-use serde::{de::DeserializeOwned, Serialize};
 
 use super::plugin::{RustcPlugin, PLUGIN_ARGS};
 
@@ -45,7 +42,7 @@ fn toolchain_path(home: Option<String>, toolchain: Option<String>) -> Option<Pat
   })
 }
 
-fn get_sysroot(orig_args: &Vec<String>) -> (bool, String) {
+fn get_sysroot(orig_args: &[String]) -> (bool, String) {
   // Get the sysroot, looking from most specific to this invocation to the least:
   // - command line
   // - runtime environment

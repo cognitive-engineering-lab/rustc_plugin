@@ -1,13 +1,7 @@
-use std::{
-  borrow::Cow,
-  env, fs,
-  ops::Deref,
-  path::{Path, PathBuf},
-  process::{exit, Command, Stdio},
-};
+use std::{borrow::Cow, path::PathBuf};
 
 use cargo_metadata::camino::Utf8Path;
-use rustc_tools_util::VersionInfo;
+
 use serde::{de::DeserializeOwned, Serialize};
 
 /// Arguments from your plugin to the rustc-plugin framework.
