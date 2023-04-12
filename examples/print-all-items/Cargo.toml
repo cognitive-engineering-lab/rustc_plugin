@@ -1,0 +1,13 @@
+[package]
+name = "print-all-items"
+version = "0.1.0"
+edition = "2021"
+
+[package.metadata.rust-analyzer]
+rustc_private = true
+
+[dependencies]
+rustc-plugin = { path = "../.." }
+env_logger = "0.10"
+clap = {version = "4", features = ["derive"]}
+serde = {version = "1", features = ["derive"]}

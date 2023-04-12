@@ -1,0 +1,21 @@
+[package]
+name = "rustc-plugin"
+version = "0.0.1"
+edition = "2021"
+authors = ["Will Crichton <crichton.will@gmail.com>"]
+description = "A framework for writing plugins that integrate with the Rust compiler"
+repository = "https://github.com/cognitive-engineering-lab/rustc-plugin"
+license = "MIT"
+
+[package.metadata.rust-analyzer]
+rustc_private = true
+
+[dependencies]
+rustc_tools_util = "0.1"
+log = "0.4"
+cargo_metadata = "0.14"
+serde = "1"
+serde_json = "1"
+
+[build-dependencies]
+toml = "0.7"
