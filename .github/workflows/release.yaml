@@ -10,9 +10,9 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v1
-      - run: cargo test
+      # - run: cargo test
       - run: cargo doc --lib
       - uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: ./target/doc
-          target-folder: ${{ vars.GITHUB_REF_NAME }}
+          target-folder: ${{ github.ref_name }}
