@@ -63,7 +63,7 @@ pub fn cli_main<T: RustcPlugin>(plugin: T) {
   let args_str = serde_json::to_string(&args.args).unwrap();
   cmd.env(PLUGIN_ARGS, args_str);
 
-  // HACK: if running flowistry on the rustc codebase, this env var needs to exist
+  // HACK: if running on the rustc codebase, this env var needs to exist
   // for the code to compile
   if workspace_members.iter().any(|pkg| pkg.name == "rustc-main") {
     cmd.env("CFG_RELEASE", "");

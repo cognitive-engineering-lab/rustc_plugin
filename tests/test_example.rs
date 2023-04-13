@@ -1,4 +1,4 @@
-use std::{env, path::Path, process::Command, sync::Once};
+use std::{env, fs, path::Path, process::Command, sync::Once};
 
 use anyhow::{ensure, Context, Result};
 
@@ -36,9 +36,11 @@ fn run(dir: &str, f: impl FnOnce(&mut Command)) -> Result<()> {
 
   let here = Path::new(file!());
   let ws = here.parent().unwrap().join(dir);
-  cmd.current_dir(ws);
+  cmd.current_dir(&ws);
 
   f(&mut cmd);
+
+  let _ = fs::remove_dir_all(ws.join("target"));
 
   let status = cmd.status().context("Process failed")?;
   ensure!(status.success(), "Process exited with non-zero exit code");
