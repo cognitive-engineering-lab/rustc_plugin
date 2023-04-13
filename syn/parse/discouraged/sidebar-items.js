@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"trait":[["AnyDelimiter","Extensions to the `ParseStream` API to support manipulating invisible delimiters the same as if they were visible."],["Speculative","Extensions to the `ParseStream` API to support speculative parsing."]]};

@@ -1,1 +1,0 @@
-window.ALL_CRATES = ["camino","cargo_metadata","cargo_platform","cfg_if","itoa","log","proc_macro2","quote","rustc_plugin","rustc_tools_util","ryu","semver","serde","serde_derive","serde_json","syn","unicode_ident"];
