@@ -17,5 +17,8 @@ cargo_metadata = "0.14"
 serde = "1"
 serde_json = "1"
 
+[dev-dependencies]
+anyhow = {version = "1", features = ["backtrace"]}
+
 [build-dependencies]
 toml = "0.7"

@@ -148,6 +148,10 @@ pub fn driver_main<T: RustcPlugin>(plugin: T) {
       && (!is_lib || plugin_lib_target || plugin_all_targets);
 
     if run_plugin {
+      if plugin_all_targets {
+        rustc_driver::RunCompiler::new(&args, &mut DefaultCallbacks).run()?;
+      }
+
       log::debug!("Running plugin...");
       let plugin_args: T::Args = serde_json::from_str(&env::var(PLUGIN_ARGS).unwrap()).unwrap();
       plugin.run(args, plugin_args)
