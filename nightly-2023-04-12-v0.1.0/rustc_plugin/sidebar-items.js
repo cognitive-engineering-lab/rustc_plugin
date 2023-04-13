@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["cli_main","driver_main"],"struct":["RustcPluginArgs"],"trait":["RustcPlugin"]};
