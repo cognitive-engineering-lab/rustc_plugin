@@ -4,11 +4,12 @@ extern crate rustc_driver;
 extern crate rustc_interface;
 extern crate rustc_middle;
 
+use std::{borrow::Cow, env};
+
 use clap::Parser;
 use rustc_middle::ty::TyCtxt;
 use rustc_plugin::{RustcPlugin, RustcPluginArgs, Utf8Path};
 use serde::{Deserialize, Serialize};
-use std::{borrow::Cow, env};
 
 pub struct PrintAllItemsPlugin;
 
@@ -62,7 +63,6 @@ impl rustc_driver::Callbacks for PrintAllItemsCallbacks {
     queries
       .global_ctxt()
       .unwrap()
-      .take()
       .enter(|tcx| print_all_items(tcx, &self.args));
 
     rustc_driver::Compilation::Stop
