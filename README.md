@@ -1,8 +1,10 @@
 # rustc-plugin
 
 [![Tests](https://github.com/cognitive-engineering-lab/rustc-plugin/actions/workflows/tests.yaml/badge.svg)](https://github.com/cognitive-engineering-lab/rustc-plugin/actions/workflows/tests.yaml)
+[![docs](https://img.shields.io/badge/docs-built-blue)][docs]
 
-`rustc-plugin` is a framework for writing plugins that integrate with the Rust compiler. We wrote `rustc-plugin` to support our research on experimental Rust tools like [Flowistry](https://github.com/willcrichton/flowistry/) and [Aquascope](https://github.com/cognitive-engineering-lab/aquascope). `rustc-plugin` is a kind of generalized version of the infrastructure in [Clippy](https://github.com/rust-lang/rust-clippy).
+
+`rustc-plugin` is a framework for writing plugins that integrate with the Rust compiler. We wrote `rustc-plugin` to support our research on experimental Rust tools like [Flowistry] and [Aquascope]. `rustc-plugin` is a kind of generalized version of the infrastructure in [Clippy].
 
 ## Installation
 
@@ -16,4 +18,11 @@ tag = "nightly-2022-12-07-v0.1.0"
 
 ## Usage
 
-See the [`print-all-items`](https://github.com/cognitive-engineering-lab/rustc-plugin/tree/main/examples/print-all-items) crate for an example of how to use `rustc-plugin`. 
+[See the `print-all-items` crate][example] for an example of how to use `rustc-plugin`. [See the docs][docs] for an explanation of each API component.
+
+
+[Flowistry]: https://github.com/willcrichton/flowistry/
+[Aquascope]: https://github.com/cognitive-engineering-lab/aquascope
+[Clippy]: https://github.com/rust-lang/rust-clippy
+[example]: https://github.com/cognitive-engineering-lab/rustc-plugin/tree/main/examples/print-all-items
+[docs]: https://cognitive-engineering-lab.github.io/rustc-plugin/nightly-2022-12-07-v0.0.1/rustc_plugin/
