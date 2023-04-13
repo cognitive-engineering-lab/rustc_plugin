@@ -10,7 +10,6 @@ extern crate rustc_interface;
 
 #[doc(hidden)]
 pub use cargo_metadata::camino::Utf8Path;
-
 pub use cli::cli_main;
 pub use driver::driver_main;
 pub use plugin::{RustcPlugin, RustcPluginArgs};

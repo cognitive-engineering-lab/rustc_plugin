@@ -1,7 +1,6 @@
 use std::{borrow::Cow, path::PathBuf};
 
 use cargo_metadata::camino::Utf8Path;
-
 use serde::{de::DeserializeOwned, Serialize};
 
 /// Arguments from your plugin to the rustc-plugin framework.

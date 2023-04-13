@@ -1,8 +1,6 @@
+use std::{env, path::Path, process::Command, sync::Once};
+
 use anyhow::{ensure, Context, Result};
-use std::env;
-use std::path::Path;
-use std::process::Command;
-use std::sync::Once;
 
 static SETUP: Once = Once::new();
 

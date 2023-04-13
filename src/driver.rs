@@ -153,7 +153,8 @@ pub fn driver_main<T: RustcPlugin>(plugin: T) {
       }
 
       log::debug!("Running plugin...");
-      let plugin_args: T::Args = serde_json::from_str(&env::var(PLUGIN_ARGS).unwrap()).unwrap();
+      let plugin_args: T::Args =
+        serde_json::from_str(&env::var(PLUGIN_ARGS).unwrap()).unwrap();
       plugin.run(args, plugin_args)
     } else {
       log::debug!(
