@@ -33,4 +33,4 @@ The `rustc-plugin` framework is responsible for marshalling arguments from the t
 [Aquascope]: https://github.com/cognitive-engineering-lab/aquascope
 [Clippy]: https://github.com/rust-lang/rust-clippy
 [example]: https://github.com/cognitive-engineering-lab/rustc-plugin/tree/main/examples/print-all-items
-[docs]: https://cognitive-engineering-lab.github.io/rustc-plugin/nightly-2023-04-12-v0.0.1/rustc_plugin/
+[docs]: https://cognitive-engineering-lab.github.io/rustc-plugin/nightly-2023-04-12-v0.1.1/rustc_plugin/
