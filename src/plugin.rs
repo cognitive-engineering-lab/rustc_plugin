@@ -3,19 +3,25 @@ use std::{borrow::Cow, path::PathBuf};
 use cargo_metadata::camino::Utf8Path;
 use serde::{de::DeserializeOwned, Serialize};
 
+/// Specification of a set of crates.
+pub enum CrateFilter {
+  /// Every crate in the workspace and all transitive dependencies.
+  AllCrates,
+
+  /// Just crates in the workspace.
+  OnlyWorkspace,
+
+  /// Only the crate containing a specific file.
+  CrateContainingFile(PathBuf),
+}
+
 /// Arguments from your plugin to the rustc-plugin framework.
 pub struct RustcPluginArgs<Args> {
   /// Whatever CLI arguments you want to pass along.
   pub args: Args,
 
-  /// Any compiler flags you want to add to the Cargo invocation.
-  pub flags: Option<Vec<String>>,
-
-  /// A specific file that you want to execute the plugin on.
-  ///
-  /// The framework will automatically detect the crate containing
-  /// the file, and only run on that crate.
-  pub file: Option<PathBuf>,
+  /// Which crates you want to run the plugin on.
+  pub filter: CrateFilter,
 }
 
 /// Interface between your plugin and the rustc-plugin framework.

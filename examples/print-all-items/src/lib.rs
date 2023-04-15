@@ -8,7 +8,7 @@ use std::{borrow::Cow, env};
 
 use clap::Parser;
 use rustc_middle::ty::TyCtxt;
-use rustc_plugin::{RustcPlugin, RustcPluginArgs, Utf8Path};
+use rustc_plugin::{CrateFilter, RustcPlugin, RustcPluginArgs, Utf8Path};
 use serde::{Deserialize, Serialize};
 
 pub struct PrintAllItemsPlugin;
@@ -32,11 +32,8 @@ impl RustcPlugin for PrintAllItemsPlugin {
 
   fn args(&self, _target_dir: &Utf8Path) -> RustcPluginArgs<Self::Args> {
     let args = PrintAllItemsPluginArgs::parse_from(env::args().skip(1));
-    RustcPluginArgs {
-      flags: None,
-      file: None,
-      args,
-    }
+    let filter = CrateFilter::AllCrates;
+    RustcPluginArgs { args, filter }
   }
 
   fn run(
@@ -55,7 +52,7 @@ struct PrintAllItemsCallbacks {
 }
 
 impl rustc_driver::Callbacks for PrintAllItemsCallbacks {
-  fn after_parsing<'tcx>(
+  fn after_analysis<'tcx>(
     &mut self,
     _compiler: &rustc_interface::interface::Compiler,
     queries: &'tcx rustc_interface::Queries<'tcx>,
@@ -65,7 +62,7 @@ impl rustc_driver::Callbacks for PrintAllItemsCallbacks {
       .unwrap()
       .enter(|tcx| print_all_items(tcx, &self.args));
 
-    rustc_driver::Compilation::Stop
+    rustc_driver::Compilation::Continue
   }
 }
 

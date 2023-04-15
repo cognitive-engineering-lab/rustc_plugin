@@ -8,6 +8,7 @@ use std::{
 use rustc_tools_util::VersionInfo;
 
 use super::plugin::{RustcPlugin, PLUGIN_ARGS};
+use crate::cli::{RUN_ON_ALL_CRATES, TARGET_CRATE};
 
 /// If a command-line option matches `find_arg`, then apply the predicate `pred` on its value. If
 /// true, then return it. The parameter is assumed to be either `--arg=value` or `--arg value`.
@@ -129,43 +130,26 @@ pub fn driver_main<T: RustcPlugin>(plugin: T) {
     };
 
     // On a given invocation of rustc, we have to decide whether to act as rustc,
-    // or actually execute the plugin. There are three conditions for executing the plugin:
-    // 1. CARGO_PRIMARY_PACKAGE must be set, as we don't run the plugin on dependencies.
+    // or actually execute the plugin. There are two conditions for executing the plugin:
+    // 1. Either we're supposed to run on all crates, or CARGO_PRIMARY_PACKAGE is set.
     // 2. --print is NOT passed, since Cargo does that to get info about rustc.
-    // 3. If rustc is running on src/lib.rs, then we only run the plugin if we're supposed to,
-    //    i.e. RUSTC_PLUGIN_LIB_TARGET is set. If the plugin is supposed to run on a reverse-dep
-    //    of the lib, then we need to let the lib be checked as normal to generate an rmeta.
-    // TODO: document RUSTC_PLUGIN_ALL_TARGETS
     let primary_package = env::var("CARGO_PRIMARY_PACKAGE").is_ok();
-    let normal_rustc = args.iter().any(|arg| arg.starts_with("--print"));
-    let is_lib = args.iter().any(|arg| arg == "src/lib.rs");
-    let is_build_script = args.iter().any(|arg| arg == "build.rs");
-    let plugin_lib_target = env::var("RUSTC_PLUGIN_LIB_TARGET").is_ok();
-    let plugin_all_targets = env::var("RUSTC_PLUGIN_ALL_TARGETS").is_ok();
-    let run_plugin = primary_package
-      && !normal_rustc
-      && !is_build_script
-      && (!is_lib || plugin_lib_target || plugin_all_targets);
+    let run_on_all_crates = env::var(RUN_ON_ALL_CRATES).is_ok();
+    let normal_rustc = arg_value(&args, "--print", |_| true).is_some();
+    let is_target_crate = match env::var(TARGET_CRATE) {
+      Ok(target) => arg_value(&args, "--crate-name", |name| name == target).is_some(),
+      Err(_) => true,
+    };
+    let run_plugin =
+      !normal_rustc && (run_on_all_crates || primary_package) && is_target_crate;
 
     if run_plugin {
-      if plugin_all_targets {
-        rustc_driver::RunCompiler::new(&args, &mut DefaultCallbacks).run()?;
-      }
-
       log::debug!("Running plugin...");
       let plugin_args: T::Args =
         serde_json::from_str(&env::var(PLUGIN_ARGS).unwrap()).unwrap();
       plugin.run(args, plugin_args)
     } else {
-      log::debug!(
-        "Not running plugin. Relevant variables: \
-primary_package={primary_package}, \
-normal_rustc={normal_rustc}, \
-is_build_script={is_build_script}, \
-is_lib={is_lib}, \
-plugin_lib_target={plugin_lib_target}, \
-plugin_all_targets={plugin_all_targets}"
-      );
+      log::debug!("Running normal Rust...");
       rustc_driver::RunCompiler::new(&args, &mut DefaultCallbacks).run()
     }
   }))

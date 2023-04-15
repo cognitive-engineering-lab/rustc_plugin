@@ -12,7 +12,7 @@ extern crate rustc_interface;
 pub use cargo_metadata::camino::Utf8Path;
 pub use cli::cli_main;
 pub use driver::driver_main;
-pub use plugin::{RustcPlugin, RustcPluginArgs};
+pub use plugin::{CrateFilter, RustcPlugin, RustcPluginArgs};
 
 mod cli;
 mod driver;

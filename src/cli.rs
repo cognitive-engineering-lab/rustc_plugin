@@ -7,6 +7,10 @@ use std::{
 use cargo_metadata::camino::Utf8Path;
 
 use super::plugin::{RustcPlugin, PLUGIN_ARGS};
+use crate::CrateFilter;
+
+pub const RUN_ON_ALL_CRATES: &str = "RUSTC_PLUGIN_ALL_TARGETS";
+pub const TARGET_CRATE: &str = "TARGET_CRATE";
 
 /// The top-level function that should be called in your user-facing binary.
 pub fn cli_main<T: RustcPlugin>(plugin: T) {
@@ -53,11 +57,20 @@ pub fn cli_main<T: RustcPlugin>(plugin: T) {
     })
     .collect::<Vec<_>>();
 
-  if let Some(file_path) = args.file {
-    only_run_on_file(&mut cmd, file_path, &workspace_members, &target_dir);
-  } else {
-    cmd.env("RUSTC_PLUGIN_ALL_TARGETS", "");
-    cmd.arg("--all");
+  match args.filter {
+    CrateFilter::CrateContainingFile(file_path) => {
+      only_run_on_file(&mut cmd, file_path, &workspace_members, &target_dir);
+    }
+    CrateFilter::AllCrates | CrateFilter::OnlyWorkspace => {
+      cmd.arg("--all");
+      match args.filter {
+        CrateFilter::AllCrates => {
+          cmd.env(RUN_ON_ALL_CRATES, "");
+        }
+        CrateFilter::OnlyWorkspace => {}
+        CrateFilter::CrateContainingFile(_) => unreachable!(),
+      }
+    }
   }
 
   let args_str = serde_json::to_string(&args.args).unwrap();
@@ -67,11 +80,6 @@ pub fn cli_main<T: RustcPlugin>(plugin: T) {
   // for the code to compile
   if workspace_members.iter().any(|pkg| pkg.name == "rustc-main") {
     cmd.env("CFG_RELEASE", "");
-  }
-
-  cmd.arg("--");
-  if let Some(flags) = args.flags {
-    cmd.args(flags);
   }
 
   let exit_status = cmd.status().expect("failed to wait for cargo?");
@@ -144,6 +152,7 @@ fn only_run_on_file(
 
   // Add compile filter to specify the target corresponding to the given file
   cmd.arg("-p").arg(format!("{}:{}", pkg.name, pkg.version));
+  cmd.env(TARGET_CRATE, &pkg.name);
 
   let kind = &target.kind[0];
   if kind != "proc-macro" {
@@ -153,10 +162,6 @@ fn only_run_on_file(
   match kind.as_str() {
     "proc-macro" => {}
     "lib" => {
-      // If we're supposed to be running the plugin on the library target,
-      // pass that info to the driver
-      cmd.env("RUSTC_PLUGIN_LIB_TARGET", "");
-
       // If the rmeta files were previously generated for the lib (e.g. by running the plugin
       // on a reverse-dep), then we have to remove them or else Cargo will memoize the plugin.
       let deps_dir = target_dir.join("debug").join("deps");
