@@ -8,7 +8,7 @@ use std::{
 use rustc_tools_util::VersionInfo;
 
 use super::plugin::{RustcPlugin, PLUGIN_ARGS};
-use crate::cli::{RUN_ON_ALL_CRATES, TARGET_CRATE};
+use crate::cli::{RUN_ON_ALL_CRATES, SPECIFIC_CRATE, SPECIFIC_TARGET};
 
 /// If a command-line option matches `find_arg`, then apply the predicate `pred` on its value. If
 /// true, then return it. The parameter is assumed to be either `--arg=value` or `--arg value`.
@@ -136,9 +136,12 @@ pub fn driver_main<T: RustcPlugin>(plugin: T) {
     let primary_package = env::var("CARGO_PRIMARY_PACKAGE").is_ok();
     let run_on_all_crates = env::var(RUN_ON_ALL_CRATES).is_ok();
     let normal_rustc = arg_value(&args, "--print", |_| true).is_some();
-    let is_target_crate = match env::var(TARGET_CRATE) {
-      Ok(target) => arg_value(&args, "--crate-name", |name| name == target).is_some(),
-      Err(_) => true,
+    let is_target_crate = match (env::var(SPECIFIC_CRATE), env::var(SPECIFIC_TARGET)) {
+      (Ok(krate), Ok(target)) => {
+        arg_value(&args, "--crate-name", |name| name == krate).is_some()
+          && arg_value(&args, "--crate-type", |name| name == target).is_some()
+      }
+      _ => true,
     };
     let run_plugin =
       !normal_rustc && (run_on_all_crates || primary_package) && is_target_crate;
@@ -149,7 +152,13 @@ pub fn driver_main<T: RustcPlugin>(plugin: T) {
         serde_json::from_str(&env::var(PLUGIN_ARGS).unwrap()).unwrap();
       plugin.run(args, plugin_args)
     } else {
-      log::debug!("Running normal Rust...");
+      log::debug!(
+        "Running normal Rust. Relevant variables:\
+normal_rustc={normal_rustc}, \
+run_on_all_crates={run_on_all_crates}, \
+primary_package={primary_package}, \
+is_target_crate={is_target_crate}"
+      );
       rustc_driver::RunCompiler::new(&args, &mut DefaultCallbacks).run()
     }
   }))

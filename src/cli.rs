@@ -10,7 +10,8 @@ use super::plugin::{RustcPlugin, PLUGIN_ARGS};
 use crate::CrateFilter;
 
 pub const RUN_ON_ALL_CRATES: &str = "RUSTC_PLUGIN_ALL_TARGETS";
-pub const TARGET_CRATE: &str = "TARGET_CRATE";
+pub const SPECIFIC_CRATE: &str = "SPECIFIC_CRATE";
+pub const SPECIFIC_TARGET: &str = "SPECIFIC_TARGET";
 
 /// The top-level function that should be called in your user-facing binary.
 pub fn cli_main<T: RustcPlugin>(plugin: T) {
@@ -152,12 +153,14 @@ fn only_run_on_file(
 
   // Add compile filter to specify the target corresponding to the given file
   cmd.arg("-p").arg(format!("{}:{}", pkg.name, pkg.version));
-  cmd.env(TARGET_CRATE, &pkg.name);
 
   let kind = &target.kind[0];
   if kind != "proc-macro" {
     cmd.arg(format!("--{kind}"));
   }
+
+  cmd.env(SPECIFIC_CRATE, &pkg.name.replace('-', "_"));
+  cmd.env(SPECIFIC_TARGET, kind);
 
   match kind.as_str() {
     "proc-macro" => {}
