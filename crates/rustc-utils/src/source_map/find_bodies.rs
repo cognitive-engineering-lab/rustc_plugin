@@ -66,3 +66,34 @@ pub fn find_enclosing_bodies(tcx: TyCtxt, sp: Span) -> impl Iterator<Item = Body
   bodies.sort_by_key(|(span, _)| span.size());
   bodies.into_iter().map(|(_, id)| id)
 }
+
+#[cfg(test)]
+mod test {
+  use super::*;
+  use crate::test_utils;
+
+  #[test]
+  fn test_find_bodies() {
+    let input = r#"
+// Ignore constants
+const C: usize = 0;
+
+fn a() {
+  // Catch nested bodies
+  fn b() {}
+}
+
+fn c() {}
+
+macro_rules! m {
+  () => { fn d() {} }
+}
+
+// Ignore macro-generated bodies
+m!{}
+"#;
+    test_utils::compile(input, |tcx| {
+      assert_eq!(find_bodies(tcx).len(), 3);
+    });
+  }
+}

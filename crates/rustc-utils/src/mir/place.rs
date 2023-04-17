@@ -7,7 +7,9 @@ use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::{
   mir::{
     visit::{PlaceContext, Visitor},
-    MirPass, *,
+    Body, HasLocalDecls, Local, Location, MirPass, Mutability, Place, PlaceElem,
+    PlaceRef, ProjectionElem, StatementKind, TerminatorKind, VarDebugInfo,
+    VarDebugInfoContents, RETURN_PLACE,
   },
   traits::ObligationCause,
   ty::{
@@ -619,54 +621,104 @@ impl<'tcx> TypeVisitor<TyCtxt<'tcx>> for CollectRegions<'tcx> {
 
 #[cfg(test)]
 mod test {
-
+  use rustc_borrowck::BodyWithBorrowckFacts;
+  use rustc_data_structures::fx::FxHashSet as HashSet;
+  use rustc_hir::{BodyId, Mutability};
+  use rustc_middle::{
+    mir::{Local, Place, PlaceElem},
+    ty::{IntTy, RegionKind, RegionVid, Ty, TyCtxt, TypeAndMut},
+  };
   use rustc_span::Symbol;
+  use rustc_target::abi::{FieldIdx, VariantIdx};
 
-  use super::*;
+  use super::{BodyExt, PlaceExt};
   use crate::test_utils;
+
+  #[test]
+  fn test_place_arg_direct() {
+    let input = r#"
+fn foobar(x: &i32) {
+  let y = 1;
+  let z = &y;
+}
+"#;
+    test_utils::compile_body(input, |tcx, _, body_with_facts| {
+      let body = &body_with_facts.body;
+      let name_map = body.debug_info_name_map();
+      let x = Place::from_local(name_map["x"], tcx);
+      assert!(x.is_arg(body));
+      assert!(x.is_direct(body));
+      assert!(Place::make(x.local, &[PlaceElem::Deref], tcx).is_direct(body));
+
+      let y = Place::from_local(name_map["y"], tcx);
+      assert!(!y.is_arg(body));
+      assert!(y.is_direct(body));
+
+      let z = Place::from_local(name_map["z"], tcx);
+      assert!(!z.is_arg(body));
+      assert!(z.is_direct(body));
+      assert!(!Place::make(z.local, &[PlaceElem::Deref], tcx).is_direct(body));
+    });
+  }
+
+  fn place_generator<'tcx>(
+    tcx: TyCtxt<'tcx>,
+  ) -> impl Fn(Local, &[PlaceElem<'tcx>]) -> Place<'tcx> {
+    move |local, elems| Place::make(local, elems, tcx)
+  }
+
+  fn field<'tcx>(i: usize, ty: Ty<'tcx>) -> PlaceElem<'tcx> {
+    PlaceElem::Field(FieldIdx::from_usize(i), ty)
+  }
+
+  fn index<'a>(i: usize) -> PlaceElem<'a> {
+    PlaceElem::Index(Local::from_usize(i))
+  }
+
+  fn deref<'a>() -> PlaceElem<'a> {
+    PlaceElem::Deref
+  }
+
+  fn downcast<'a>(s: &str, i: usize) -> PlaceElem<'a> {
+    PlaceElem::Downcast(Some(Symbol::intern(s)), VariantIdx::from_usize(i))
+  }
 
   #[test]
   fn test_place_to_string() {
     let input = r#"
-    struct Point { x: usize, y: usize }
-    fn main() {
-      let x = (0, 0);
-      let y = Some(1);
-      let z = &[Some((0, 1))];    
-      let w = (&y,);
-      let p = &Point { x: 0, y: 0 };
-    }
+struct Point { x: usize, y: usize }
+fn main() {
+  let x = (0, 0);
+  let y = Some(1);
+  let z = &[Some((0, 1))];    
+  let w = (&y,);
+  let p = &Point { x: 0, y: 0 };
+}
     "#;
-    test_utils::compile_body(input, |tcx, _body_id, body_with_facts| {
+    test_utils::compile_body(input, |tcx, _, body_with_facts| {
       let body = &body_with_facts.body;
-      let name_map = body
-        .debug_info_name_map()
-        .into_iter()
-        .map(|(k, v)| (v.to_string(), k))
-        .collect::<HashMap<_, _>>();
+      let name_map = body.debug_info_name_map();
 
-      let downcast = |s: &str, i: usize| {
-        PlaceElem::Downcast(Some(Symbol::intern(s)), VariantIdx::from_usize(i))
-      };
-      let field = |i: usize| PlaceElem::Field(FieldIdx::from_usize(i), tcx.mk_unit());
-      let index = |i: usize| PlaceElem::Index(Local::from_usize(i));
-      let deref = || PlaceElem::Deref;
+      let mk = place_generator(tcx);
 
-      let x = Place::from_local(name_map["x"], tcx);
-      let x_1 = Place::make(name_map["x"], &[field(1)], tcx);
-      let y_some_0 = Place::make(name_map["y"], &[downcast("Some", 1), field(0)], tcx);
-      let z_deref_some_0_1 = Place::make(
-        name_map["z"],
-        &[deref(), index(0), downcast("Some", 1), field(0), field(1)],
-        tcx,
-      );
-      let w_0_deref = Place::make(name_map["w"], &[field(0), deref()], tcx);
-      let w_0_deref_some = Place::make(
-        name_map["w"],
-        &[field(0), deref(), downcast("Some", 1)],
-        tcx,
-      );
-      let p_deref_x = Place::make(name_map["p"], &[deref(), field(0)], tcx);
+      let uty = tcx.mk_unit();
+      let x = mk(name_map["x"], &[]);
+      let x_1 = mk(name_map["x"], &[field(1, uty)]);
+      let y_some_0 = mk(name_map["y"], &[downcast("Some", 1), field(0, uty)]);
+      let z_deref_some_0_1 = mk(name_map["z"], &[
+        deref(),
+        index(0),
+        downcast("Some", 1),
+        field(0, uty),
+        field(1, uty),
+      ]);
+      let w_0_deref = mk(name_map["w"], &[field(0, uty), deref()]);
+      let w_0_deref_some = mk(name_map["w"], &[
+        field(0, uty),
+        deref(),
+        downcast("Some", 1),
+      ]);
+      let p_deref_x = mk(name_map["p"], &[deref(), field(0, uty)]);
 
       let tests = [
         (x, "x"),
@@ -682,5 +734,65 @@ mod test {
         assert_eq!(place.to_string(tcx, body).unwrap(), expected);
       }
     });
+  }
+
+  #[test]
+  fn test_place_visitors() {
+    let input = r#"
+fn main() {
+  let x = 0;
+  let y = (0, &x);
+}
+    "#;
+    fn callback<'tcx>(
+      tcx: TyCtxt<'tcx>,
+      body_id: BodyId,
+      body_with_facts: &BodyWithBorrowckFacts<'tcx>,
+    ) {
+      let body = &body_with_facts.body;
+      let def_id = tcx.hir().body_owner_def_id(body_id).to_def_id();
+      let name_map = body.debug_info_name_map();
+      let mk = place_generator(tcx);
+
+      let ty_i32 = tcx.mk_mach_int(IntTy::I32);
+      let yloc = name_map["y"];
+      let y = mk(yloc, &[]);
+      let y0 = mk(yloc, &[field(0, ty_i32)]);
+      let ref_ty = tcx.mk_ref(
+        tcx.mk_region_from_kind(RegionKind::ReVar(RegionVid::from_usize(0))),
+        TypeAndMut {
+          ty: ty_i32,
+          mutbl: Mutability::Not,
+        },
+      );
+      let y1 = mk(yloc, &[field(1, ref_ty)]);
+      let y1_deref = mk(yloc, &[field(1, ref_ty), deref()]);
+
+      let compare_places = |v1: Vec<Place<'tcx>>, v2: Vec<Place<'tcx>>| {
+        assert_eq!(
+          v1.into_iter()
+            .map(|p| p.normalize(tcx, def_id))
+            .collect::<HashSet<_>>(),
+          v2.into_iter()
+            .map(|p| p.normalize(tcx, def_id))
+            .collect::<HashSet<_>>()
+        );
+      };
+
+      compare_places(y.interior_paths(tcx, body, def_id), vec![
+        y, y0, y1, y1_deref,
+      ]);
+
+      compare_places(y.interior_places(tcx, body, def_id), vec![y, y0, y1]);
+
+      compare_places(
+        y.interior_pointers(tcx, body, def_id)
+          .into_values()
+          .flat_map(|vs| vs.into_iter().map(|(p, _)| p))
+          .collect::<Vec<_>>(),
+        vec![y1],
+      );
+    }
+    test_utils::compile_body(input, callback);
   }
 }

@@ -6,7 +6,7 @@
   lazy_cell,             // for global constants w/ heap allocation
   box_patterns,          // for ergonomics
   let_chains,            // for places_conflict module
-  exact_size_is_empty    // for graphviz module
+  exact_size_is_empty,   // for graphviz module
 )]
 #![allow(clippy::len_zero)]
 
@@ -16,7 +16,6 @@ extern crate rustc_data_structures;
 extern crate rustc_driver;
 extern crate rustc_graphviz;
 extern crate rustc_hir;
-extern crate rustc_hir_pretty;
 extern crate rustc_index;
 extern crate rustc_infer;
 extern crate rustc_interface;

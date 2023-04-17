@@ -13,7 +13,6 @@ use rustc_middle::{
   ty::{Region, Ty, TyCtxt},
 };
 use rustc_mir_dataflow::{fmt::DebugWithContext, Analysis, Results};
-use rustc_span::Symbol;
 use smallvec::SmallVec;
 
 use super::control_dependencies::ControlDependencies;
@@ -40,8 +39,8 @@ pub trait BodyExt<'tcx> {
   /// Returns all the locations in a [`BasicBlock`].
   fn locations_in_block(&self, block: BasicBlock) -> Self::LocationsIter;
 
-  // Returns a mapping from local variables to source-level names, if they exist
-  fn debug_info_name_map(&self) -> HashMap<Local, Symbol>;
+  // Returns a mapping from source-level variable names to [`Local`]s.
+  fn debug_info_name_map(&self) -> HashMap<String, Local>;
 
   /// Converts a Body to a debug representation
   fn to_string(&self, tcx: TyCtxt<'tcx>) -> Result<String>;
@@ -81,6 +80,8 @@ pub trait BodyExt<'tcx> {
   /// Returns all the region variables that appear in the body's return type.
   fn regions_in_return(&self) -> Self::ReturnRegionsIter;
 
+  /// Visualizes analysis results using graphviz/dot and writes them to
+  /// a file in the `target/` directory named `<function name>.pdf`.
   fn write_analysis_results<A>(
     &self,
     results: &Results<'tcx, A>,
@@ -129,12 +130,12 @@ impl<'tcx> BodyExt<'tcx> for Body<'tcx> {
     })
   }
 
-  fn debug_info_name_map(&self) -> HashMap<Local, Symbol> {
+  fn debug_info_name_map(&self) -> HashMap<String, Local> {
     self
       .var_debug_info
       .iter()
       .filter_map(|info| match info.value {
-        VarDebugInfoContents::Place(place) => Some((place.local, info.name)),
+        VarDebugInfoContents::Place(place) => Some((info.name.to_string(), place.local)),
         _ => None,
       })
       .collect()
@@ -245,4 +246,28 @@ pub fn run_dot(path: &Path, buf: Vec<u8>) -> Result<()> {
   ensure!(status.success(), "dot for {} failed", path.display());
 
   Ok(())
+}
+
+#[cfg(test)]
+mod test {
+  use super::BodyExt;
+  use crate::test_utils;
+
+  #[test]
+  fn test_body_ext() {
+    let input = r#"
+    fn foobar<'a>(x: &'a i32, y: &'a i32) -> &'a i32 {
+      if *x > 0 {
+        return x;
+      }
+
+      y
+    }"#;
+
+    test_utils::compile_body(input, |_, _, body| {
+      let body = &body.body;
+      assert_eq!(body.regions_in_args().count(), 2);
+      assert_eq!(body.regions_in_return().count(), 1);
+    });
+  }
 }

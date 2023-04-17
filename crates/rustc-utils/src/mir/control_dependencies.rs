@@ -200,95 +200,95 @@ impl<Node: Idx + Ord> ControlDependencies<Node> {
   }
 }
 
-// #[cfg(test)]
-// mod test {
-//   use log::debug;
-//   use rustc_data_structures::fx::{FxHashMap as HashMap, FxHashSet as HashSet};
-//   use rustc_middle::mir::Location;
-//   use test_log::test;
+#[cfg(test)]
+mod test {
+  use log::debug;
+  use rustc_data_structures::fx::{FxHashMap as HashMap, FxHashSet as HashSet};
+  use rustc_middle::mir::Location;
+  use test_log::test;
 
-//   use crate::{mir::body::BodyExt, test_utils};
+  use crate::{test_utils, BodyExt};
 
-//   #[test]
-//   fn test_control_dependencies() {
-//     let input = r#"
-//     fn main() {
-//       let mut x = 1;
-//       x = 2;
-//       if true { x = 3; }
-//       for _ in 0 .. 1 { x = 4; }
-//       x = 5;
-//     }"#;
-//     test_utils::compile_body(input, move |tcx, _, body_with_facts| {
-//       let body = &body_with_facts.body;
-//       let control_deps = body.control_dependencies();
+  #[test]
+  fn test_control_dependencies() {
+    let input = r#"
+    fn main() {
+      let mut x = 1;
+      x = 2;
+      if true { x = 3; }
+      for _ in 0 .. 1 { x = 4; }
+      x = 5;
+    }"#;
+    test_utils::compile_body(input, move |tcx, _, body_with_facts| {
+      let body = &body_with_facts.body;
+      let control_deps = body.control_dependencies();
 
-//       let mut snippet_to_loc: HashMap<_, Vec<_>> = HashMap::default();
-//       for loc in body.all_locations() {
-//         let snippet = tcx
-//           .sess
-//           .source_map()
-//           .span_to_snippet(body.source_info(loc).span)
-//           .unwrap();
-//         snippet_to_loc.entry(snippet).or_default().push(loc);
-//       }
-//       debug!("snippet_to_loc: {snippet_to_loc:#?}");
-//       let pair = |s| (s, &snippet_to_loc[s]);
+      let mut snippet_to_loc: HashMap<_, Vec<_>> = HashMap::default();
+      for loc in body.all_locations() {
+        let snippet = tcx
+          .sess
+          .source_map()
+          .span_to_snippet(body.source_info(loc).span)
+          .unwrap();
+        snippet_to_loc.entry(snippet).or_default().push(loc);
+      }
+      debug!("snippet_to_loc: {snippet_to_loc:#?}");
+      let pair = |s| (s, &snippet_to_loc[s]);
 
-//       let x_eq_1 = pair("mut x");
-//       let x_eq_2 = pair("x = 2");
-//       let if_true = pair("true");
-//       let x_eq_3 = pair("x = 3");
-//       let for_in = pair("0 .. 1");
-//       let x_eq_4 = pair("x = 4");
-//       let x_eq_5 = pair("x = 5");
+      let x_eq_1 = pair("mut x");
+      let x_eq_2 = pair("x = 2");
+      let if_true = pair("true");
+      let x_eq_3 = pair("x = 3");
+      let for_in = pair("0 .. 1");
+      let x_eq_4 = pair("x = 4");
+      let x_eq_5 = pair("x = 5");
 
-//       let is_dep_loc = |l1: Location, l2: Location| {
-//         let is_terminator = body.stmt_at(l2).is_right();
-//         is_terminator
-//           && control_deps
-//             .dependent_on(l1.block)
-//             .map(|deps| deps.contains(l2.block))
-//             .unwrap_or(false)
-//       };
+      let is_dep_loc = |l1: Location, l2: Location| {
+        let is_terminator = body.stmt_at(l2).is_right();
+        is_terminator
+          && control_deps
+            .dependent_on(l1.block)
+            .map(|deps| deps.contains(l2.block))
+            .unwrap_or(false)
+      };
 
-//       let is_dep = |l1: &[Location], l2: &[Location]| {
-//         l1.iter().any(|l1| l2.iter().any(|l2| is_dep_loc(*l1, *l2)))
-//       };
+      let is_dep = |l1: &[Location], l2: &[Location]| {
+        l1.iter().any(|l1| l2.iter().any(|l2| is_dep_loc(*l1, *l2)))
+      };
 
-//       let all_locs = [x_eq_1, x_eq_2, if_true, x_eq_3, for_in, x_eq_4, x_eq_5]
-//         .into_iter()
-//         .collect::<HashSet<_>>();
-//       let all_deps: &[(_, &[_])] = &[
-//         (x_eq_1, &[]),
-//         (x_eq_2, &[]),
-//         (if_true, &[x_eq_3]),
-//         (x_eq_3, &[]),
-//         (for_in, &[x_eq_4]),
-//         (x_eq_5, &[]),
-//       ];
+      let all_locs = [x_eq_1, x_eq_2, if_true, x_eq_3, for_in, x_eq_4, x_eq_5]
+        .into_iter()
+        .collect::<HashSet<_>>();
+      let all_deps: &[(_, &[_])] = &[
+        (x_eq_1, &[]),
+        (x_eq_2, &[]),
+        (if_true, &[x_eq_3]),
+        (x_eq_3, &[]),
+        (for_in, &[x_eq_4]),
+        (x_eq_5, &[]),
+      ];
 
-//       for ((parent_name, parent_locs), desired) in all_deps {
-//         let desired = desired.iter().copied().collect::<HashSet<_>>();
-//         for (child_name, child_locs) in &desired {
-//           assert!(
-//             is_dep(child_locs, parent_locs),
-//             "{child_name} was not dependent on {parent_name}, but should be"
-//           );
-//         }
+      for ((parent_name, parent_locs), desired) in all_deps {
+        let desired = desired.iter().copied().collect::<HashSet<_>>();
+        for (child_name, child_locs) in &desired {
+          assert!(
+            is_dep(child_locs, parent_locs),
+            "{child_name} was not dependent on {parent_name}, but should be"
+          );
+        }
 
-//         let remaining = &all_locs - &desired;
-//         for (child_name, child_locs) in remaining {
-//           if *parent_name == child_name {
-//             continue;
-//           }
+        let remaining = &all_locs - &desired;
+        for (child_name, child_locs) in remaining {
+          if *parent_name == child_name {
+            continue;
+          }
 
-//           assert!(
-//             !is_dep(child_locs, parent_locs),
-//             "{child_name} was dependent on {parent_name}, but should not be"
-//           );
-//         }
-//       }
-//     });
-//   }
-// }
+          assert!(
+            !is_dep(child_locs, parent_locs),
+            "{child_name} was dependent on {parent_name}, but should not be"
+          );
+        }
+      }
+    });
+  }
+}

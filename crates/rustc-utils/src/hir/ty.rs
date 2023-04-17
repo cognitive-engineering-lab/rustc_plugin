@@ -10,8 +10,10 @@ pub trait TyExt<'tcx> {
   where
     Self: 'a;
 
+  /// Returns all the region variables appearing within a type.
   fn inner_regions(&self) -> Self::AllRegionsIter<'_>;
 
+  /// Returns true if a type implements a given trait.
   fn does_implement_trait(
     &self,
     tcx: TyCtxt<'tcx>,
@@ -19,6 +21,7 @@ pub trait TyExt<'tcx> {
     trait_def_id: DefId,
   ) -> bool;
 
+  /// Returns true if a type implements `Copy`.
   fn is_copyable(&self, tcx: TyCtxt<'tcx>, param_env: ParamEnv<'tcx>) -> bool;
 }
 
@@ -53,5 +56,34 @@ impl<'tcx> TyExt<'tcx> for Ty<'tcx> {
   fn is_copyable(&self, tcx: TyCtxt<'tcx>, param_env: ParamEnv<'tcx>) -> bool {
     let ty = tcx.erase_regions(*self);
     ty.is_copy_modulo_regions(tcx, param_env)
+  }
+}
+
+#[cfg(test)]
+mod test {
+  use rustc_middle::ty::ParamEnv;
+
+  use super::TyExt;
+  use crate::{test_utils, BodyExt};
+
+  #[test]
+  fn test_ty_ext() {
+    let input = r#"
+fn main() {
+  let x = &mut 0;
+  let y = 0;
+}"#;
+
+    test_utils::compile_body(input, |tcx, _, body| {
+      let body = &body.body;
+      let locals = body.debug_info_name_map();
+      let x = &body.local_decls[locals["x"]];
+      let y = &body.local_decls[locals["y"]];
+      assert_eq!(x.ty.inner_regions().count(), 1);
+      assert_eq!(y.ty.inner_regions().count(), 0);
+
+      assert!(!x.ty.is_copyable(tcx, ParamEnv::empty()));
+      assert!(y.ty.is_copyable(tcx, ParamEnv::empty()));
+    });
   }
 }

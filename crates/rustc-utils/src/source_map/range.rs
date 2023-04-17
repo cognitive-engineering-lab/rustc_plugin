@@ -329,3 +329,55 @@ impl ToSpan for FunctionIdentifier {
     }
   }
 }
+
+#[cfg(test)]
+mod test {
+  use super::*;
+  use crate::test_utils;
+
+  #[test]
+  fn test_range() {
+    let emoji = "🦀";
+    let input = &format!(
+      r#"
+fn main() {{
+  let x = "{emoji}";
+}}
+
+// mysterious bytes
+"#
+    );
+
+    test_utils::compile(input, |tcx| {
+      let source_map = tcx.sess.source_map();
+      let filename = Filename::intern("dummy.rs");
+      filename.find_source_file(source_map).unwrap();
+
+      let id = FunctionIdentifier::Qpath(String::from("main"));
+      id.to_span(tcx).unwrap();
+
+      let id = FunctionIdentifier::Qpath(String::from("foobar"));
+      id.to_span(tcx).unwrap_err();
+
+      let id = FunctionIdentifier::Range(CharRange {
+        start: CharPos(0),
+        end: CharPos(1),
+        filename,
+      });
+      id.to_span(tcx).unwrap();
+
+      let emoji_index = input.find(emoji).unwrap();
+      let byte_range = ByteRange {
+        start: BytePos(emoji_index),
+        end: BytePos(emoji_index + emoji.len()),
+        filename,
+      };
+      let char_range = byte_range.as_char_range(source_map);
+      assert_eq!(char_range, CharRange {
+        start: CharPos(emoji_index),
+        end: CharPos(emoji_index + 1),
+        filename
+      });
+    });
+  }
+}

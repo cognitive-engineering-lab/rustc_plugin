@@ -1,3 +1,5 @@
+//! Copied with no modifications from the Rust compiler
+
 #![deny(rustc::untranslatable_diagnostic)]
 #![deny(rustc::diagnostic_outside_of_impl)]
 use std::{cmp::max, iter};
