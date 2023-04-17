@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["FunctionIdentifier"],"struct":["BytePos","CharPos","Range","RangeContext"],"trait":["ToSpan"],"type":["ByteRange","CharRange"]};
