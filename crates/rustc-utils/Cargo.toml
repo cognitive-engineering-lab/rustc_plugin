@@ -1,6 +1,6 @@
 [package]
 name = "rustc-utils"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["Will Crichton <crichton.will@gmail.com>"]
 description = "Utilities for working with the Rust compiler"
@@ -11,7 +11,6 @@ license = "MIT"
 rustc_private = true
 
 [features]
-default = ["serde", "test"] # TODO: don't DO THIS
 serde = ["dep:serde"]
 test = ["dep:textwrap"]
 
@@ -23,5 +22,6 @@ serde = {version = "1", features = ["derive"], optional = true}
 textwrap = {version = "0.16", optional = true}
 
 [dev-dependencies]
+rustc-utils = {path = ".", features = ["test"]}
 test-log = "0.2"
 env_logger = {version = "0.9", default-features = false}

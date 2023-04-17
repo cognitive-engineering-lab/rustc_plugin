@@ -1,12 +1,10 @@
 use std::path::PathBuf;
 
-use serde::Serialize;
-
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Filename(pub PathBuf);
 
 rustc_index::newtype_index! {
-  #[cfg_attr(feature = "serde", derive(Serialize))]
+  #[cfg_attr(feature = "serde", derive(serde::Serialize))]
   #[debug_format = "f{}"]
   pub struct FilenameIndex {}
 }
