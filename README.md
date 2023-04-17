@@ -13,24 +13,24 @@ The Rust compiler's interface is not stable, so the only sensible way to develop
 ```toml
 [dependencies.rustc-plugin]
 git = "https://github.com/cognitive-engineering-lab/rustc-plugin"
-tag = "nightly-2023-04-12-v0.1.0"
+tag = "nightly-2023-04-12-v0.1.2"
 ```
 
 ## Usage
 
 [See the `print-all-items` crate][example] for an example of how to use `rustc-plugin`. [See the docs][docs] for an explanation of each API component. In short, a Rustc plugin is structured like this:
 
-* [`rust-toolchain.toml`](https://github.com/cognitive-engineering-lab/rustc-plugin/blob/main/examples/print-all-items/rust-toolchain.toml): specifies the nightly version for your plugin.
-* [`src/`](https://github.com/cognitive-engineering-lab/rustc-plugin/blob/main/examples/print-all-items/src)
-  * [`bin/`](https://github.com/cognitive-engineering-lab/rustc-plugin/blob/main/examples/print-all-items/src/bin)
-    * [`cargo-print-all-items.rs`](https://github.com/cognitive-engineering-lab/rustc-plugin/blob/main/examples/print-all-items/src/bin/cargo-print-all-items.rs): the CLI binary run directly by the user, e.g. by invoking `cargo print-all-items`. 
-    * [`print-all-items-driver.rs`](https://github.com/cognitive-engineering-lab/rustc-plugin/blob/main/examples/print-all-items/src/bin/print-all-items-driver.rs): the implementation binary used by the CLI.
-  * [`lib.rs`](https://github.com/cognitive-engineering-lab/rustc-plugin/blob/main/examples/print-all-items/src/lib.rs): Your plugin implementation, which exports a data structure that implements the `RustcPlugin` trait.
+* [`rust-toolchain.toml`](https://github.com/cognitive-engineering-lab/rustc-plugin/blob/main/crates/rustc-plugin/examples/print-all-items/rust-toolchain.toml): specifies the nightly version for your plugin.
+* [`src/`](https://github.com/cognitive-engineering-lab/rustc-plugin/tree/main/crates/rustc-plugin/examples/print-all-items/src)
+  * [`bin/`](https://github.com/cognitive-engineering-lab/rustc-plugin/tree/main/crates/rustc-plugin/examples/print-all-items/src/bin)
+    * [`cargo-print-all-items.rs`](https://github.com/cognitive-engineering-lab/rustc-plugin/blob/main/crates/rustc-plugin/examples/print-all-items/src/bin/cargo-print-all-items.rs): the CLI binary run directly by the user, e.g. by invoking `cargo print-all-items`. 
+    * [`print-all-items-driver.rs`](https://github.com/cognitive-engineering-lab/rustc-plugin/blob/main/crates/rustc-plugin/examples/print-all-items/src/bin/print-all-items-driver.rs): the implementation binary used by the CLI.
+  * [`lib.rs`](https://github.com/cognitive-engineering-lab/rustc-plugin/blob/main/crates/rustc-plugin/examples/print-all-items/src/lib.rs): Your plugin implementation, which exports a data structure that implements the `RustcPlugin` trait.
 
 The `rustc-plugin` framework is responsible for marshalling arguments from the top-level CLI into the individual invocations of the driver. It handles issues like setting the sysroot (so the compiler can locate the Rust standard libraries) and finding the crate that contains a given file (if you only want to run on a specific file). Everything else is up to you!
 
 [Flowistry]: https://github.com/willcrichton/flowistry/
 [Aquascope]: https://github.com/cognitive-engineering-lab/aquascope
 [Clippy]: https://github.com/rust-lang/rust-clippy
-[example]: https://github.com/cognitive-engineering-lab/rustc-plugin/tree/main/examples/print-all-items
-[docs]: https://cognitive-engineering-lab.github.io/rustc-plugin/nightly-2023-04-12-v0.1.1/rustc_plugin/
+[example]: https://github.com/cognitive-engineering-lab/rustc-plugin/tree/main/crates/rustc-plugin/examples/print-all-items
+[docs]: https://cognitive-engineering-lab.github.io/rustc-plugin/nightly-2023-04-12-v0.1.2/rustc_plugin/
