@@ -1,16 +1,7 @@
-use std::{
-  borrow::Cow,
-  collections::VecDeque,
-  io::Write,
-  ops::ControlFlow,
-  path::Path,
-  process::{Command, Stdio},
-};
+use std::{borrow::Cow, collections::VecDeque, ops::ControlFlow};
 
-use anyhow::{bail, Result};
 use log::{trace, warn};
 use rustc_data_structures::fx::{FxHashMap as HashMap, FxHashSet as HashSet};
-use rustc_graphviz as dot;
 use rustc_hir::def_id::DefId;
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::{
@@ -23,7 +14,6 @@ use rustc_middle::{
     self, AdtKind, RegionKind, RegionVid, Ty, TyCtxt, TyKind, TypeAndMut, TypeVisitor,
   },
 };
-use rustc_mir_dataflow::{fmt::DebugWithContext, graphviz, Analysis, Results};
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use rustc_trait_selection::traits::NormalizeExt;
 use smallvec::SmallVec;
@@ -42,45 +32,6 @@ impl<'tcx> Visitor<'tcx> for PlaceCollector<'tcx> {
   ) {
     self.0.push(*place);
   }
-}
-
-pub fn run_dot(path: &Path, buf: Vec<u8>) -> Result<()> {
-  let mut p = Command::new("dot")
-    .args(["-Tpdf", "-o", &path.display().to_string()])
-    .stdin(Stdio::piped())
-    .spawn()?;
-
-  p.stdin.as_mut().unwrap().write_all(&buf)?;
-  let status = p.wait()?;
-
-  if !status.success() {
-    bail!("dot for {} failed", path.display())
-  };
-
-  Ok(())
-}
-
-pub fn dump_results<'tcx, A>(
-  body: &Body<'tcx>,
-  results: &Results<'tcx, A>,
-  _def_id: DefId,
-  _tcx: TyCtxt<'tcx>,
-) -> Result<()>
-where
-  A: Analysis<'tcx>,
-  A::Domain: DebugWithContext<A>,
-{
-  let graphviz =
-    graphviz::Formatter::new(body, results, graphviz::OutputStyle::AfterOnly);
-  let mut buf = Vec::new();
-  dot::render(&graphviz, &mut buf)?;
-
-  let output_dir = Path::new("target");
-  // let fname = tcx.def_path_debug_str(def_id);
-  let fname = "results";
-  let output_path = output_dir.join(format!("{fname}.pdf"));
-
-  run_dot(&output_path, buf)
 }
 
 /// MIR pass to remove instructions not important for Flowistry.
@@ -179,7 +130,7 @@ pub trait PlaceExt<'tcx> {
   /// Provides a nicer debug representation of a place in terms of debug info.
   fn to_string(&self, tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Option<String>;
 
-  /// Erases/normalizes information in a place to ensure stable comparisons between places
+  /// Erases/normalizes information in a place to ensure stable comparisons between places.
   ///
   /// Consider a place `_1: &'1 <T as SomeTrait>::Foo[2]`.
   ///   We might encounter this type with a different region, e.g. `&'2`.
@@ -187,6 +138,9 @@ pub trait PlaceExt<'tcx> {
   /// To account for this variation, we normalize associated types,
   ///   erase regions, and normalize projections.
   fn normalize(&self, tcx: TyCtxt<'tcx>, def_id: DefId) -> Place<'tcx>;
+
+  /// Returns true if this place's base local corresponds to a code that is visible in the source.
+  fn is_source_visible(&self, tcx: TyCtxt, body: &Body) -> bool;
 }
 
 impl<'tcx> PlaceExt<'tcx> for Place<'tcx> {
@@ -430,6 +384,21 @@ impl<'tcx> PlaceExt<'tcx> for Place<'tcx> {
       .collect::<Vec<_>>();
 
     Place::make(place.local, &projection, tcx)
+  }
+
+  fn is_source_visible(&self, tcx: TyCtxt, body: &Body) -> bool {
+    let local = self.local;
+    let local_info = &body.local_decls[local];
+    let is_loc = local_info.is_user_variable();
+    let from_desugaring = local_info.from_compiler_desugaring();
+    let source_info = local_info.source_info;
+
+    // The assumption is that decls whose source_scope should be collapsed
+    // (i.e. with that of the outermost expansion site) are coming from a
+    // HIR -> MIR expansion OR are being expanded from some macro not
+    // actually visible in the source scope.
+    let should_collapse = tcx.should_collapse_debuginfo(source_info.span);
+    is_loc && !should_collapse && !from_desugaring
   }
 }
 

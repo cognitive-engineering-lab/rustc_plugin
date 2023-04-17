@@ -4,7 +4,9 @@
   min_specialization,    // for rustc_index::newtype_index 
   type_alias_impl_trait, // for iterators in traits
   lazy_cell,             // for global constants w/ heap allocation
-  box_patterns
+  box_patterns,          // for ergonomics
+  let_chains,            // for places_conflict module
+  exact_size_is_empty    // for graphviz module
 )]
 #![allow(clippy::len_zero)]
 
@@ -19,6 +21,7 @@ extern crate rustc_index;
 extern crate rustc_infer;
 extern crate rustc_interface;
 extern crate rustc_macros;
+#[macro_use]
 extern crate rustc_middle;
 extern crate rustc_mir_dataflow;
 extern crate rustc_mir_transform;
@@ -30,6 +33,7 @@ extern crate rustc_trait_selection;
 extern crate smallvec;
 
 pub mod cache;
+pub mod hir;
 pub mod mir;
 pub mod source_map;
 #[cfg(feature = "test")]
@@ -37,6 +41,7 @@ pub mod test_utils;
 pub mod timer;
 
 pub use crate::{
+  hir::{region::RegionExt, ty::TyExt},
   mir::{body::BodyExt, mutability::MutabilityExt, operand::OperandExt, place::PlaceExt},
   source_map::span::{SpanDataExt, SpanExt},
 };

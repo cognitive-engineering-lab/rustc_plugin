@@ -1,13 +1,23 @@
-use anyhow::Result;
-use rustc_data_structures::fx::FxHashMap as HashMap;
+use std::{
+  io::Write,
+  path::Path,
+  process::{Command, Stdio},
+};
+
+use anyhow::{ensure, Result};
+use cfg_if::cfg_if;
+use rustc_data_structures::{captures::Captures, fx::FxHashMap as HashMap};
 use rustc_hir::{def_id::DefId, GeneratorKind, HirId};
 use rustc_middle::{
   mir::{pretty::write_mir_fn, *},
-  ty::{Ty, TyCtxt},
+  ty::{Region, Ty, TyCtxt},
 };
+use rustc_mir_dataflow::{fmt::DebugWithContext, Analysis, Results};
 use rustc_span::Symbol;
+use smallvec::SmallVec;
 
 use super::control_dependencies::ControlDependencies;
+use crate::{PlaceExt, TyExt};
 
 /// Extension trait for [`Body`].
 pub trait BodyExt<'tcx> {
@@ -30,8 +40,10 @@ pub trait BodyExt<'tcx> {
   /// Returns all the locations in a [`BasicBlock`].
   fn locations_in_block(&self, block: BasicBlock) -> Self::LocationsIter;
 
+  // Returns a mapping from local variables to source-level names, if they exist
   fn debug_info_name_map(&self) -> HashMap<Local, Symbol>;
 
+  /// Converts a Body to a debug representation
   fn to_string(&self, tcx: TyCtxt<'tcx>) -> Result<String>;
 
   /// Returns the HirId corresponding to a MIR location.
@@ -42,14 +54,43 @@ pub trait BodyExt<'tcx> {
 
   fn source_info_to_hir_id(&self, info: &SourceInfo) -> HirId;
 
+  /// Returns all the control dependencies within the CFG.
+  ///
+  /// See the [`ControlDependencies`] documentation for details.
   fn control_dependencies(&self) -> ControlDependencies<BasicBlock>;
 
+  /// If this body is an async function, then return the type of the context.
   fn async_context(&self, tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<Ty<'tcx>>;
-}
 
-// https://github.com/rust-lang/rust/issues/66551#issuecomment-629815002
-pub trait Captures<'a> {}
-impl<'a, T> Captures<'a> for T {}
+  type PlacesIter<'a>: Iterator<Item = Place<'tcx>>
+  where
+    Self: 'a;
+
+  /// Returns all projections of all local variables in the body.
+  fn all_places(&self, tcx: TyCtxt<'tcx>, def_id: DefId) -> Self::PlacesIter<'_>;
+
+  type ArgRegionsIter<'a>: Iterator<Item = Region<'tcx>>
+  where
+    Self: 'a;
+
+  /// Returns all the region variables that appear in argument types to the body.
+  fn regions_in_args(&self) -> Self::ArgRegionsIter<'_>;
+
+  type ReturnRegionsIter: Iterator<Item = Region<'tcx>>;
+
+  /// Returns all the region variables that appear in the body's return type.
+  fn regions_in_return(&self) -> Self::ReturnRegionsIter;
+
+  fn write_analysis_results<A>(
+    &self,
+    results: &Results<'tcx, A>,
+    def_id: DefId,
+    tcx: TyCtxt<'tcx>,
+  ) -> Result<()>
+  where
+    A: Analysis<'tcx>,
+    A::Domain: DebugWithContext<A>;
+}
 
 impl<'tcx> BodyExt<'tcx> for Body<'tcx> {
   type AllReturnsIter<'a> = impl Iterator<Item = Location> + Captures<'tcx> + 'a where Self: 'a;
@@ -130,4 +171,78 @@ impl<'tcx> BodyExt<'tcx> for Body<'tcx> {
       None
     }
   }
+
+  type ArgRegionsIter<'a> = impl Iterator<Item = Region<'tcx>> + Captures<'tcx> + 'a
+  where Self: 'a;
+
+  type ReturnRegionsIter = impl Iterator<Item = Region<'tcx>>;
+
+  type PlacesIter<'a> = impl Iterator<Item = Place<'tcx>> + Captures<'tcx> + 'a
+  where Self: 'a;
+
+  fn regions_in_args(&self) -> Self::ArgRegionsIter<'_> {
+    self
+      .args_iter()
+      .flat_map(|arg_local| self.local_decls[arg_local].ty.inner_regions())
+  }
+
+  fn regions_in_return(&self) -> Self::ReturnRegionsIter {
+    self
+      .return_ty()
+      .inner_regions()
+      .collect::<SmallVec<[Region<'tcx>; 8]>>()
+      .into_iter()
+  }
+
+  fn all_places(&self, tcx: TyCtxt<'tcx>, def_id: DefId) -> Self::PlacesIter<'_> {
+    self.local_decls.indices().flat_map(move |local| {
+      Place::from_local(local, tcx).interior_paths(tcx, self, def_id)
+    })
+  }
+
+  #[allow(unused)]
+  fn write_analysis_results<A>(
+    &self,
+    results: &Results<'tcx, A>,
+    def_id: DefId,
+    tcx: TyCtxt<'tcx>,
+  ) -> Result<()>
+  where
+    A: Analysis<'tcx>,
+    A::Domain: DebugWithContext<A>,
+  {
+    cfg_if! {
+      if #[cfg(feature = "graphviz")] {
+        use rustc_graphviz as dot;
+        use super::graphviz;
+
+        let graphviz =
+          graphviz::Formatter::new(self, results, graphviz::OutputStyle::AfterOnly);
+        let mut buf = Vec::new();
+        dot::render(&graphviz, &mut buf)?;
+
+        let output_dir = Path::new("target");
+        let fname = tcx.def_path_debug_str(def_id);
+        let output_path = output_dir.join(format!("{fname}.pdf"));
+
+        run_dot(&output_path, buf)
+      } else {
+        anyhow::bail!("graphviz feature is not enabled")
+      }
+    }
+  }
+}
+
+pub fn run_dot(path: &Path, buf: Vec<u8>) -> Result<()> {
+  let mut p = Command::new("dot")
+    .args(["-Tpdf", "-o", &path.display().to_string()])
+    .stdin(Stdio::piped())
+    .spawn()?;
+
+  p.stdin.as_mut().unwrap().write_all(&buf)?;
+
+  let status = p.wait()?;
+  ensure!(status.success(), "dot for {} failed", path.display());
+
+  Ok(())
 }

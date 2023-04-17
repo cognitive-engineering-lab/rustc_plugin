@@ -2,7 +2,7 @@
 
 use std::{fs, io, panic, path::Path, process::Command, sync::LazyLock};
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, ensure, Context, Result};
 use log::debug;
 use rustc_borrowck::BodyWithBorrowckFacts;
 use rustc_data_structures::fx::{FxHashMap as HashMap, FxHashSet as HashSet};
@@ -202,9 +202,7 @@ pub fn parse_ranges(
     out_idx += 1;
   }
 
-  if stack.len() > 0 {
-    bail!("Unclosed delimiters: {stack:?}");
-  }
+  ensure!(stack.is_empty(), "Unclosed delimiters: {stack:?}");
 
   let prog_clean = String::from_utf8(buf)?;
   Ok((prog_clean, ranges))

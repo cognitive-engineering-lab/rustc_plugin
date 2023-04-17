@@ -3,7 +3,7 @@ use std::{
   path::PathBuf,
 };
 
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, ensure, Context, Result};
 use rustc_data_structures::{fx::FxHashMap as HashMap, sync::Lrc};
 use rustc_hir::{
   intravisit::{self, Visitor},
@@ -89,7 +89,7 @@ impl FilenameIndex {
         Entry::Occupied(entry) => Ok(Lrc::clone(entry.get())),
         Entry::Vacant(entry) => {
           let files = source_map.files();
-          debug_assert!(
+          ensure!(
             ctx.filenames.get(self).is_some(),
             "Missing file index!"
           );
@@ -215,7 +215,7 @@ impl ByteRange {
         filename => bail!("Range::from_span doesn't support {filename:?}"),
       };
 
-      assert!(
+      ensure!(
         source_map.ensure_source_file_source_present(file.clone()),
         "Could not load source for file: {:?}",
         file.name
