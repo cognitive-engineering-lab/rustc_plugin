@@ -1,7 +1,9 @@
+//! Utilities for [`Mutability`].
+
 use rustc_middle::mir::Mutability;
 
 pub trait MutabilityExt {
-  /// Returns true if `self` is eqully or more permissive than `other`,
+  /// Returns true if `self` is equally or more permissive than `other`,
   /// i.e. where `Not` is more permissive than `Mut`.
   ///
   /// This corresponds to the relation $\omega_1 \lesssim \omega_2$ in the Flowistry paper.

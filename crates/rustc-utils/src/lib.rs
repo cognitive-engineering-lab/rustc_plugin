@@ -1,3 +1,15 @@
+//! `rustc-utils` provides a wide variety of utilities for working with the Rust compiler.
+//! We developed these functions in the course of building various research projects with
+//! rustc.
+//!
+//! Most of the functionality is organized into extension traits implemented for types
+//! in the compiler, such as one for MIR control-flow graphs ([`BodyExt`]) or one for
+//! text ranges ([`SpanExt`]).
+//!
+//! This crate is pinned to a specific nightly version of the Rust compiler.
+//! See the [`rustc-plugin` README](https://github.com/cognitive-engineering-lab/rustc-plugin)
+//! for details on how to add `rustc-utils` as a dependency.
+
 #![feature(
   rustc_private,
   negative_impls,        // for !Send

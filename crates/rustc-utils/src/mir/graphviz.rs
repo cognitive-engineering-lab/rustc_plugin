@@ -1,6 +1,6 @@
 //! A helpful diagram for debugging dataflow problems.
 //!
-//! Copied with slight modification from the Rust compiler
+//! Copied with slight modification from the Rust compiler.
 
 use std::{borrow::Cow, io, ops, str, sync::OnceLock};
 

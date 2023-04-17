@@ -1,3 +1,5 @@
+//! Utilities for [`Body`].
+
 use std::{
   io::Write,
   path::Path,
@@ -24,14 +26,14 @@ pub trait BodyExt<'tcx> {
   where
     Self: 'a;
 
-  /// Returns all the locations of [`TerminatorKind::Return`] instructions in a body.
+  /// Returns an iterator over the locations of [`TerminatorKind::Return`] instructions in a body.
   fn all_returns(&self) -> Self::AllReturnsIter<'_>;
 
   type AllLocationsIter<'a>: Iterator<Item = Location>
   where
     Self: 'a;
 
-  /// Returns all the locations in a body.
+  /// Returns an iterator over all the locations in a body.
   fn all_locations(&self) -> Self::AllLocationsIter<'_>;
 
   type LocationsIter: Iterator<Item = Location>;
@@ -39,13 +41,13 @@ pub trait BodyExt<'tcx> {
   /// Returns all the locations in a [`BasicBlock`].
   fn locations_in_block(&self, block: BasicBlock) -> Self::LocationsIter;
 
-  // Returns a mapping from source-level variable names to [`Local`]s.
+  /// Returns a mapping from source-level variable names to [`Local`]s.
   fn debug_info_name_map(&self) -> HashMap<String, Local>;
 
-  /// Converts a Body to a debug representation
+  /// Converts a Body to a debug representation.
   fn to_string(&self, tcx: TyCtxt<'tcx>) -> Result<String>;
 
-  /// Returns the HirId corresponding to a MIR location.
+  /// Returns the [`HirId`] corresponding to a MIR [`Location`].
   ///
   /// You **MUST** use the `-Zmaximize-hir-to-mir-mapping` flag for this
   /// function to work.
@@ -55,29 +57,31 @@ pub trait BodyExt<'tcx> {
 
   /// Returns all the control dependencies within the CFG.
   ///
-  /// See the [`ControlDependencies`] documentation for details.
+  /// See the [`control_dependencies`][super::control_dependencies] module documentation
+  /// for details.
   fn control_dependencies(&self) -> ControlDependencies<BasicBlock>;
 
-  /// If this body is an async function, then return the type of the context.
+  /// If this body is an async function, then return the type of the context that holds
+  /// locals across await calls.
   fn async_context(&self, tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<Ty<'tcx>>;
 
   type PlacesIter<'a>: Iterator<Item = Place<'tcx>>
   where
     Self: 'a;
 
-  /// Returns all projections of all local variables in the body.
+  /// Returns an iterator over all projections of all local variables in the body.
   fn all_places(&self, tcx: TyCtxt<'tcx>, def_id: DefId) -> Self::PlacesIter<'_>;
 
   type ArgRegionsIter<'a>: Iterator<Item = Region<'tcx>>
   where
     Self: 'a;
 
-  /// Returns all the region variables that appear in argument types to the body.
+  /// Returns an iterator over all the regions that appear in argument types to the body.
   fn regions_in_args(&self) -> Self::ArgRegionsIter<'_>;
 
   type ReturnRegionsIter: Iterator<Item = Region<'tcx>>;
 
-  /// Returns all the region variables that appear in the body's return type.
+  /// Returns an iterator over all the regions that appear in the body's return type.
   fn regions_in_return(&self) -> Self::ReturnRegionsIter;
 
   /// Visualizes analysis results using graphviz/dot and writes them to

@@ -1,17 +1,18 @@
-use rustc_middle::ty::{self, Region, RegionVid};
+//! Utilities for [`Region`].
 
+use rustc_middle::ty::{Region, RegionVid};
+
+/// Extension trait for [`Region`].
 pub trait RegionExt {
+  /// Assume that the region is a [`RegionVid`], getting the variable if so
+  /// and panicing otherwise.
   fn to_region_vid(self) -> RegionVid;
 }
 
 impl<'tcx> RegionExt for Region<'tcx> {
-  // XXX: when our pinned toolchain is upgraded we can
-  // use `Region::as_var` instead to make this simpler.
   fn to_region_vid(self) -> RegionVid {
-    if let ty::ReVar(vid) = self.kind() {
-      vid
-    } else {
-      unreachable!("region is not an ReVar{:?}", self)
-    }
+    self
+      .as_var()
+      .unwrap_or_else(|| panic!("region is not an ReVar: {self:?}"))
   }
 }

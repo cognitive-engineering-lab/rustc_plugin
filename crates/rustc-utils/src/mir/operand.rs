@@ -1,8 +1,10 @@
+//! Utilities for [`Operand`].
+
 use rustc_middle::mir::{Operand, Place};
 
 /// Extension trait for [`Operand`].
 pub trait OperandExt<'tcx> {
-  /// Converts an [`Operand`] to a [`Place`] if possible.
+  /// Extracts the [`Place`] inside an [`Operand`] if it exists.
   fn as_place(&self) -> Option<Place<'tcx>>;
 }
 

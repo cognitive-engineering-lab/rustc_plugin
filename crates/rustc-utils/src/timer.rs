@@ -1,3 +1,5 @@
+//! A simple timer for profiling.
+
 use std::time::Instant;
 
 use log::info;
@@ -17,6 +19,7 @@ impl Drop for BlockTimer<'_> {
   }
 }
 
+/// Logs the time taken from the start to the end of a syntactic block.
 #[macro_export]
 macro_rules! block_timer {
   ($name:expr) => {

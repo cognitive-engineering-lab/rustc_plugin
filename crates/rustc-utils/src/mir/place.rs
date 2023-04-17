@@ -1,3 +1,5 @@
+//! Utilities for [`Place`].
+
 use std::{borrow::Cow, collections::VecDeque, ops::ControlFlow};
 
 use log::{trace, warn};
@@ -18,10 +20,10 @@ use rustc_middle::{
 };
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use rustc_trait_selection::traits::NormalizeExt;
-use smallvec::SmallVec;
 
 use crate::{BodyExt, SpanExt};
 
+/// A MIR [`Visitor`] which collects all [`Place`]s that appear in the visited object.
 #[derive(Default)]
 pub struct PlaceCollector<'tcx>(pub Vec<Place<'tcx>>);
 
@@ -98,13 +100,19 @@ pub trait PlaceExt<'tcx> {
   /// of arguments.
   fn is_direct(&self, body: &Body<'tcx>) -> bool;
 
-  /// Returns all prefixes of `self`'s projection that are references, along with
-  /// the suffix of the remaining projection.
-  fn refs_in_projection(&self) -> SmallVec<[(PlaceRef<'tcx>, &[PlaceElem<'tcx>]); 2]>;
+  type RefsInProjectionIter<'a>: Iterator<
+    Item = (PlaceRef<'tcx>, &'tcx [PlaceElem<'tcx>]),
+  >
+  where
+    Self: 'a;
+
+  /// Returns an iterator over all prefixes of `self`'s projection that are references,
+  ///  along with the suffix of the remaining projection.
+  fn refs_in_projection(&self) -> Self::RefsInProjectionIter<'_>;
 
   /// Returns all possible projections of `self` that are references.
   ///
-  /// The output data structure indexes the resultant places based on the region of the references.
+  /// The output data structure groups the resultant places based on the region of the references.
   fn interior_pointers(
     &self,
     tcx: TyCtxt<'tcx>,
@@ -129,7 +137,7 @@ pub trait PlaceExt<'tcx> {
     def_id: DefId,
   ) -> Vec<Place<'tcx>>;
 
-  /// Provides a nicer debug representation of a place in terms of debug info.
+  /// Returns a pretty representation of a place that uses debug info when available.
   fn to_string(&self, tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Option<String>;
 
   /// Erases/normalizes information in a place to ensure stable comparisons between places.
@@ -141,7 +149,7 @@ pub trait PlaceExt<'tcx> {
   ///   erase regions, and normalize projections.
   fn normalize(&self, tcx: TyCtxt<'tcx>, def_id: DefId) -> Place<'tcx>;
 
-  /// Returns true if this place's base local corresponds to a code that is visible in the source.
+  /// Returns true if this place's base [`Local`] corresponds to code that is visible in the source.
   fn is_source_visible(&self, tcx: TyCtxt, body: &Body) -> bool;
 }
 
@@ -170,7 +178,8 @@ impl<'tcx> PlaceExt<'tcx> for Place<'tcx> {
     !self.is_indirect() || self.is_arg(body)
   }
 
-  fn refs_in_projection(&self) -> SmallVec<[(PlaceRef<'tcx>, &[PlaceElem<'tcx>]); 2]> {
+  type RefsInProjectionIter<'a> = impl Iterator<Item = (PlaceRef<'tcx>, &'tcx [PlaceElem<'tcx>])> + 'a where Self: 'a;
+  fn refs_in_projection(&self) -> Self::RefsInProjectionIter<'_> {
     self
       .projection
       .iter()
@@ -186,7 +195,6 @@ impl<'tcx> PlaceExt<'tcx> for Place<'tcx> {
         }
         _ => None,
       })
-      .collect()
   }
 
   fn interior_pointers(

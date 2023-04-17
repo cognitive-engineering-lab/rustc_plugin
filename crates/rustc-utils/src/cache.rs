@@ -4,12 +4,15 @@ use std::{cell::RefCell, hash::Hash, mem, pin::Pin};
 
 use rustc_data_structures::fx::FxHashMap as HashMap;
 
+/// Cache for non-copyable types.
 pub struct Cache<In, Out>(RefCell<HashMap<In, Pin<Box<Out>>>>);
 
 impl<In, Out> Cache<In, Out>
 where
   In: Hash + Eq + Clone,
 {
+  /// Returns the cached value for the given key, or runs `compute` if
+  /// the value is not in cache.
   pub fn get<'a>(&'a self, key: In, compute: impl FnOnce(In) -> Out) -> &'a Out {
     if !self.0.borrow().contains_key(&key) {
       let out = Box::pin(compute(key.clone()));
@@ -33,6 +36,7 @@ impl<In, Out> Default for Cache<In, Out> {
   }
 }
 
+/// Cache for copyable types.
 pub struct CopyCache<In, Out>(RefCell<HashMap<In, Out>>);
 
 impl<In, Out> CopyCache<In, Out>
@@ -40,6 +44,8 @@ where
   In: Hash + Eq + Clone,
   Out: Copy,
 {
+  /// Returns the cached value for the given key, or runs `compute` if
+  /// the value is not in cache.
   pub fn get(&self, key: In, compute: impl FnOnce(In) -> Out) -> Out {
     let mut cache = self.0.borrow_mut();
     *cache

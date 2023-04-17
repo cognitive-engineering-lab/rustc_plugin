@@ -29,8 +29,13 @@ tag = "nightly-2023-04-12-v0.1.2"
 
 The `rustc-plugin` framework is responsible for marshalling arguments from the top-level CLI into the individual invocations of the driver. It handles issues like setting the sysroot (so the compiler can locate the Rust standard libraries) and finding the crate that contains a given file (if you only want to run on a specific file). Everything else is up to you!
 
+## Utilities
+
+`rustc-plugin` comes with a utilities crate `rustc-utils` that combines many functions that we've found helpful for working with the Rust compiler, especially the MIR. [Check out the docs for details.][docs-utils]
+
 [Flowistry]: https://github.com/willcrichton/flowistry/
 [Aquascope]: https://github.com/cognitive-engineering-lab/aquascope
 [Clippy]: https://github.com/rust-lang/rust-clippy
 [example]: https://github.com/cognitive-engineering-lab/rustc-plugin/tree/main/crates/rustc-plugin/examples/print-all-items
 [docs]: https://cognitive-engineering-lab.github.io/rustc-plugin/nightly-2023-04-12-v0.1.2/rustc_plugin/
+[docs-utils]: https://cognitive-engineering-lab.github.io/rustc-plugin/nightly-2023-04-12-v0.1.2/rustc_utils/

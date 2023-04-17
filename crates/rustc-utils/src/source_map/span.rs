@@ -6,17 +6,17 @@ use rustc_span::{source_map::SourceMap, BytePos, Pos, Span, SpanData, SyntaxCont
 
 /// Extension trait for [`Span`].
 pub trait SpanExt {
-  /// Get spans for regions in `self` not in `child_spans`.
+  /// Returns spans for regions in `self` not in `child_spans`.
   ///
   /// For example:
   /// ```text
   /// self:          ---------------
-  /// child_spans:    ---      --  -
+  /// child_spans:    ---      --  ---
   /// output:        -   ------  --
   /// ```
   fn subtract(&self, child_spans: Vec<Span>) -> Vec<Span>;
 
-  /// Gets the version of this span that is local to the current
+  /// Returns the version of this span that is local to the current
   /// crate, and must be contained in `outer_span`.
   fn as_local(&self, outer_span: Span) -> Option<Span>;
 
@@ -35,7 +35,10 @@ pub trait SpanExt {
   /// Returns `None` if [`SourceMap::span_to_snippet`] fails.
   fn trim_leading_whitespace(&self, source_map: &SourceMap) -> Option<Vec<Span>>;
 
+  /// Returns a pretty debug representation of a span.
   fn to_string(&self, tcx: TyCtxt<'_>) -> String;
+
+  /// Returns the size (in bytes) of the spanned text.
   fn size(&self) -> u32;
 }
 
@@ -163,6 +166,7 @@ impl SpanExt for Span {
 
 /// Extension trait for [`SpanData`].
 pub trait SpanDataExt {
+  /// Returns the size (in bytes) of the spanned text.
   fn size(&self) -> u32;
 }
 

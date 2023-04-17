@@ -76,11 +76,11 @@ impl<G: ControlFlowGraph> WithPredecessors for ReversedGraph<'_, G> {
   }
 }
 
-/// Represents the post-dominators of a graph's nodes with respect to a particular exit
+/// Represents the post-dominators of a graph's nodes with respect to a particular exit.
 pub struct PostDominators<Node: Idx>(Dominators<Node>);
 
 impl<Node: Idx> PostDominators<Node> {
-  /// Constructs the post-dominators by computing the dominators on a reversed graph
+  /// Constructs the post-dominators by computing the dominators on a reversed graph.
   pub fn build<G: ControlFlowGraph<Node = Node>>(graph: &G, exit: Node) -> Self {
     let mut reversed = ReversedGraph {
       graph,
@@ -98,19 +98,20 @@ impl<Node: Idx> PostDominators<Node> {
     PostDominators::<Node>(dominators)
   }
 
-  /// Gets the node that immediately post-dominators `node`, if one exists
+  /// Gets the node that immediately post-dominators `node`, if one exists.
   pub fn immediate_post_dominator(&self, node: Node) -> Option<Node> {
     let reachable = self.0.is_reachable(node);
     reachable.then(|| self.0.immediate_dominator(node))
   }
 
-  /// Gets all nodes that post-dominate `node`, if they exist
+  /// Gets all nodes that post-dominate `node`, if they exist.
   pub fn post_dominators(&self, node: Node) -> Option<DominatorsIter<'_, Node>> {
     let reachable = self.0.is_reachable(node);
     reachable.then(|| self.0.dominators(node))
   }
 }
 
+/// Represents the control dependencies between all pairs of nodes of a graph.
 pub struct ControlDependencies<Node: Idx>(SparseBitMatrix<Node, Node>);
 
 impl<Node: Idx> fmt::Debug for ControlDependencies<Node> {

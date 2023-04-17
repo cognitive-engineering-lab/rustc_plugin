@@ -1,4 +1,6 @@
-//! Copied with no modifications from the Rust compiler
+//! Computes whether two places conflict with each other.
+//!
+//! Copied with no modifications from the Rust compiler.
 
 #![deny(rustc::untranslatable_diagnostic)]
 #![deny(rustc::diagnostic_outside_of_impl)]

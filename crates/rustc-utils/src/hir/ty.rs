@@ -1,16 +1,18 @@
+//! Utilities for [`Ty`].
+
 use rustc_data_structures::captures::Captures;
 use rustc_hir::def_id::DefId;
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::ty::{subst::GenericArgKind, ParamEnv, Region, Ty, TyCtxt};
 use rustc_trait_selection::infer::InferCtxtExt;
 
-/// Extension trait for [`ty::Ty`]
+/// Extension trait for [`Ty`].
 pub trait TyExt<'tcx> {
   type AllRegionsIter<'a>: Iterator<Item = Region<'tcx>>
   where
     Self: 'a;
 
-  /// Returns all the region variables appearing within a type.
+  /// Returns an iterator over the regions appearing within a type.
   fn inner_regions(&self) -> Self::AllRegionsIter<'_>;
 
   /// Returns true if a type implements a given trait.

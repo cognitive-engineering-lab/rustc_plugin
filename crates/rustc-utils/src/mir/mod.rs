@@ -1,3 +1,5 @@
+//! Utilities for MIR-level data structures.
+
 pub mod body;
 pub mod borrowck_facts;
 pub mod control_dependencies;
