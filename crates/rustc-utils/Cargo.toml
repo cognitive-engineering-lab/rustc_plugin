@@ -1,0 +1,27 @@
+[package]
+name = "rustc-utils"
+version = "0.1.1"
+edition = "2021"
+authors = ["Will Crichton <crichton.will@gmail.com>"]
+description = "Utilities for working with the Rust compiler"
+repository = "https://github.com/cognitive-engineering-lab/rustc-plugin"
+license = "MIT"
+
+[package.metadata.rust-analyzer]
+rustc_private = true
+
+[features]
+default = ["serde", "test"] # TODO: don't DO THIS
+serde = ["dep:serde"]
+test = ["dep:textwrap"]
+
+[dependencies]
+anyhow = "1"
+log = "0.4"
+intervaltree = "0.2"
+serde = {version = "1", features = ["derive"], optional = true}
+textwrap = {version = "0.16", optional = true}
+
+[dev-dependencies]
+test-log = "0.2"
+env_logger = {version = "0.9", default-features = false}

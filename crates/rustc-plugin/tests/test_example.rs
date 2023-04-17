@@ -7,6 +7,8 @@ static SETUP: Once = Once::new();
 fn run(dir: &str, f: impl FnOnce(&mut Command)) -> Result<()> {
   let root = env::temp_dir().join("rustc-plugin");
 
+  let heredir = Path::new(".").canonicalize()?;
+
   SETUP.call_once(|| {
     let mut cmd = Command::new("cargo");
     cmd.args([
@@ -18,6 +20,7 @@ fn run(dir: &str, f: impl FnOnce(&mut Command)) -> Result<()> {
       "--root",
     ]);
     cmd.arg(&root);
+    cmd.current_dir(&heredir);
     let status = cmd.status().unwrap();
     if !status.success() {
       panic!("installing example failed")
@@ -34,8 +37,7 @@ fn run(dir: &str, f: impl FnOnce(&mut Command)) -> Result<()> {
   );
   cmd.env("PATH", path);
 
-  let here = Path::new(file!());
-  let ws = here.parent().unwrap().join(dir);
+  let ws = heredir.join("tests").join(dir);
   cmd.current_dir(&ws);
 
   f(&mut cmd);
