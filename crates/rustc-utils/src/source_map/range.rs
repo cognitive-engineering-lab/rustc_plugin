@@ -14,6 +14,8 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::{source_map::SourceMap, FileName, RealFileName, SourceFile, Span};
 #[cfg(feature = "serde")]
 use serde::Serialize;
+#[cfg(feature = "ts-rs")]
+use ts_rs::TS;
 
 use super::filename::{Filename, FilenameIndex};
 use crate::cache::Cache;
@@ -134,31 +136,40 @@ impl FilenameIndex {
   }
 }
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
+#[cfg_attr(feature = "ts-rs", derive(TS))]
 pub struct BytePos(pub usize);
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
+#[cfg_attr(feature = "ts-rs", derive(TS))]
 
 pub struct CharPos(pub usize);
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(Serialize))]
+#[cfg_attr(feature = "ts-rs", derive(TS))]
+pub struct ByteRange {
+  pub start: BytePos,
+  pub end: BytePos,
+  pub filename: FilenameIndex,
+}
 
 /// Data structure for sharing spans outside rustc.
 ///
 /// Rustc uses byte indexes to describe ranges of source code, whereas
 /// most Javascript-based editors I've encountered (e.g. VSCode) use
 /// character-based (really grapheme-based) indexes. This data structure
-/// helps convert between the two representations.
+/// along with [`ByteRange`] helps convert between the two representations.
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
-pub struct Range<T> {
-  pub start: T,
-  pub end: T,
+#[cfg_attr(feature = "ts-rs", derive(TS))]
+pub struct CharRange {
+  pub start: CharPos,
+  pub end: CharPos,
   pub filename: FilenameIndex,
 }
-
-pub type ByteRange = Range<BytePos>;
-pub type CharRange = Range<CharPos>;
 
 impl ByteRange {
   pub fn as_char_range(&self, source_map: &SourceMap) -> CharRange {
