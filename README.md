@@ -13,7 +13,7 @@ The Rust compiler's interface is not stable, so the only sensible way to develop
 ```toml
 [dependencies.rustc-plugin]
 git = "https://github.com/cognitive-engineering-lab/rustc-plugin"
-tag = "nightly-2023-04-12-v0.1.3"
+tag = "nightly-2023-04-12-v0.1.4"
 ```
 
 ## Usage
@@ -37,5 +37,5 @@ The `rustc-plugin` framework is responsible for marshalling arguments from the t
 [Aquascope]: https://github.com/cognitive-engineering-lab/aquascope
 [Clippy]: https://github.com/rust-lang/rust-clippy
 [example]: https://github.com/cognitive-engineering-lab/rustc-plugin/tree/main/crates/rustc-plugin/examples/print-all-items
-[docs]: https://cognitive-engineering-lab.github.io/rustc-plugin/nightly-2023-04-12-v0.1.3/rustc_plugin/
-[docs-utils]: https://cognitive-engineering-lab.github.io/rustc-plugin/nightly-2023-04-12-v0.1.3/rustc_utils/
+[docs]: https://cognitive-engineering-lab.github.io/rustc-plugin/nightly-2023-04-12-v0.1.4/rustc_plugin/
+[docs-utils]: https://cognitive-engineering-lab.github.io/rustc-plugin/nightly-2023-04-12-v0.1.4/rustc_utils/
