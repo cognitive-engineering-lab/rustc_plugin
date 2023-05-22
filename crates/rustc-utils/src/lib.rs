@@ -53,6 +53,9 @@ pub mod timer;
 
 pub use crate::{
   hir::{region::RegionExt, ty::TyExt},
-  mir::{body::BodyExt, mutability::MutabilityExt, operand::OperandExt, place::PlaceExt},
+  mir::{
+    adt_def::AdtDefExt, body::BodyExt, mutability::MutabilityExt, operand::OperandExt,
+    place::PlaceExt,
+  },
   source_map::span::{SpanDataExt, SpanExt},
 };

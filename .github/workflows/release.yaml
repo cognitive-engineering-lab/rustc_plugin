@@ -3,17 +3,24 @@ name: Release
 on:
   push:
     tags:
-      - "nightly-*"
+      - "v*"
 
 jobs:
   test:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v1
-      - run: cargo test
+      - name: Install cargo-hack
+        uses: baptiste0928/cargo-install@v2
+        with:
+          crate: cargo-workspaces
+      - run: cargo test --all --all-features
       - run: cargo doc --lib
-      - run: RUSTDOCFLAGS="--html-in-header scripts/katex-header.html" cargo doc --lib --no-deps      
+      - run: RUSTDOCFLAGS="--html-in-header scripts/katex-header.html" cargo doc --lib --no-deps
       - uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: ./target/doc
           target-folder: ${{ github.ref_name }}
+      - run: |
+          cargo login ${{ secrets.CRATES_IO_TOKEN }}
+          cargo ws publish --from-git --yes
