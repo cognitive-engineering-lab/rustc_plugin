@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-VERSION=$(awk -F'"' '/^version = / {print $2}' crates/rustc-utils/Cargo.toml)
+VERSION=$(awk -F'"' '/^version = / {print $2}' crates/rustc_utils/Cargo.toml)
 TAG="v${VERSION}"
 git tag $TAG
 echo "Created tag: $TAG"

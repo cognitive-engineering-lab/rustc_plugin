@@ -3,6 +3,6 @@ members = ["crates/*"]
 
 # TODO: glob doesn't seem to work for exclude?
 exclude = [
-  "crates/rustc-plugin/examples/print-all-items", 
-  "crates/rustc-plugin/tests/workspaces"
+  "crates/rustc_plugin/examples/print-all-items", 
+  "crates/rustc_plugin/tests/workspaces"
 ]
