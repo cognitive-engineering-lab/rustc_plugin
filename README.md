@@ -11,8 +11,12 @@
 The Rust compiler's interface is not stable, so the only sensible way to develop a Rust compiler plugin is by pinning to a specific nightly. Each version of `rustc-plugin` is pinned to one nightly, and you *have* to use the same nightly version that we do. Therefore each release of `rustc-plugin` has a semantic version number (e.g. `0.1.0`) and the nightly version is added as a prerelease label (e.g. `-nightly-2023-04-12`). You can add a dependency to your `Cargo.toml` like this:
  
 ```toml
-rustc_plugin = "0.6.0-nightly-2023-04-12"
+rustc_plugin = "=0.6.0-nightly-2023-04-12"
 ```
+
+We will treat a change to the nightly version as a breaking change, so the semantic version will be correspondingly updated as a breaking update.
+
+> While you can still technically register a dependency to a plain version number like `0.1.0`, we encourage you to explicitly list the prerelease tag with the `=` requirement for maximum clarity about nightly compatibility.
 
 ## Usage
 
