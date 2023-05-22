@@ -21,7 +21,7 @@ use rustc_middle::{
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use rustc_trait_selection::traits::NormalizeExt;
 
-use crate::{BodyExt, SpanExt};
+use crate::{AdtDefExt, BodyExt, SpanExt};
 
 /// A MIR [`Visitor`] which collects all [`Place`]s that appear in the visited object.
 #[derive(Default)]
@@ -468,11 +468,7 @@ impl<'tcx> TypeVisitor<TyCtxt<'tcx>> for CollectRegions<'tcx> {
 
       TyKind::Adt(adt_def, subst) => match adt_def.adt_kind() {
         ty::AdtKind::Struct => {
-          for (i, field) in adt_def.all_fields().enumerate() {
-            if !field.vis.is_accessible_from(self.def_id, tcx) {
-              continue;
-            }
-
+          for (i, field) in adt_def.all_visible_fields(self.def_id, tcx).enumerate() {
             let ty = field.ty(tcx, subst);
             self
               .place_stack
