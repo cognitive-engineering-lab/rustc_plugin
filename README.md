@@ -8,12 +8,10 @@
 
 ## Installation
 
-The Rust compiler's interface is not stable, so the only sensible way to develop a Rust compiler plugin is by pinning to a specific nightly. Each version of `rustc-plugin` is pinned to one nightly, and you *have* to use the same nightly version that we do. Therefore each release of `rustc-plugin` will be tagged with its nightly (e.g. `nightly-2023-04-12`) and its semantic version (e.g. `v0.1.0`). The extra nightly metadata breaks Cargo's semver rules, so we won't be publishing to crates.io. Instead, you should add a git dependency like this:
+The Rust compiler's interface is not stable, so the only sensible way to develop a Rust compiler plugin is by pinning to a specific nightly. Each version of `rustc-plugin` is pinned to one nightly, and you *have* to use the same nightly version that we do. Therefore each release of `rustc-plugin` has a semantic version number (e.g. `0.1.0`) and the nightly version is added as a prerelease label (e.g. `-nightly-2023-04-12`). You can add a dependency to your `Cargo.toml` like this:
  
 ```toml
-[dependencies.rustc-plugin]
-git = "https://github.com/cognitive-engineering-lab/rustc-plugin"
-tag = "nightly-2023-04-12-v0.1.4"
+rustc_plugin = "0.6.0-nightly-2023-04-12"
 ```
 
 ## Usage
