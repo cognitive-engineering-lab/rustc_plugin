@@ -14,7 +14,7 @@ jobs:
         uses: baptiste0928/cargo-install@v2
         with:
           crate: cargo-workspaces
-      - run: cargo test
+      - run: cargo test --all --all-features
       - run: cargo doc --lib
       - run: RUSTDOCFLAGS="--html-in-header scripts/katex-header.html" cargo doc --lib --no-deps
       - uses: JamesIves/github-pages-deploy-action@v4
@@ -22,6 +22,5 @@ jobs:
           folder: ./target/doc
           target-folder: ${{ github.ref_name }}
       - run: |
-        cargo login ${{ secrets.CRATES_IO_TOKEN }}
-        cargo ws publish --from-git --yes
-
+          cargo login ${{ secrets.CRATES_IO_TOKEN }}
+          cargo ws publish --from-git --yes
