@@ -5,7 +5,7 @@ use anyhow::{ensure, Context, Result};
 static SETUP: Once = Once::new();
 
 fn run(dir: &str, f: impl FnOnce(&mut Command)) -> Result<()> {
-  let root = env::temp_dir().join("rustc-plugin");
+  let root = env::temp_dir().join("rustc_plugin");
 
   let heredir = Path::new(".").canonicalize()?;
 

@@ -15,7 +15,7 @@ pub enum CrateFilter {
   CrateContainingFile(PathBuf),
 }
 
-/// Arguments from your plugin to the rustc-plugin framework.
+/// Arguments from your plugin to the rustc_plugin framework.
 pub struct RustcPluginArgs<Args> {
   /// Whatever CLI arguments you want to pass along.
   pub args: Args,
@@ -24,7 +24,7 @@ pub struct RustcPluginArgs<Args> {
   pub filter: CrateFilter,
 }
 
-/// Interface between your plugin and the rustc-plugin framework.
+/// Interface between your plugin and the rustc_plugin framework.
 pub trait RustcPlugin: Sized {
   /// Command-line arguments passed by the user.
   type Args: Serialize + DeserializeOwned;

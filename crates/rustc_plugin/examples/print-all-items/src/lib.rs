@@ -13,7 +13,7 @@ use rustc_middle::ty::TyCtxt;
 use rustc_plugin::{CrateFilter, RustcPlugin, RustcPluginArgs, Utf8Path};
 use serde::{Deserialize, Serialize};
 
-// This struct is the plugin provided to the rustc-plugin framework,
+// This struct is the plugin provided to the rustc_plugin framework,
 // and it must be exported for use by the CLI/driver binaries.
 pub struct PrintAllItemsPlugin;
 
@@ -46,7 +46,7 @@ impl RustcPlugin for PrintAllItemsPlugin {
   }
 
   // In the driver, we use the Rustc API to start a compiler session
-  // for the arguments given to us by rustc-plugin.
+  // for the arguments given to us by rustc_plugin.
   fn run(
     self,
     compiler_args: Vec<String>,
