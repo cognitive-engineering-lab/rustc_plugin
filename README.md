@@ -35,10 +35,17 @@ We will treat a change to the nightly version as a breaking change, so the seman
 The `rustc_plugin` framework is responsible for marshalling arguments from the top-level CLI into the individual invocations of the driver. It handles issues like setting the sysroot (so the compiler can locate the Rust standard libraries) and finding the crate that contains a given file (if you only want to run on a specific file). It calls your plugin in a manner that integrates with Cargo, so it handles dependencies and such. Everything else is up to you!
 
 
-
 ## Utilities
 
 `rustc_plugin` comes with a utilities crate `rustc_utils` that combines many functions that we've found helpful for working with the Rust compiler, especially the MIR. [Check out the `rustc_utils` docs for details.][docs-utils]
+
+
+## Maximum Supported Rust Version
+
+Normally, Rust libraries have a [minimum supported Rust version][msrv] because they promise to not use any breaking features implemented after that version. Rust compiler plugins are the opposite &mdash; they have a **maximum** supported Rust version (MaxSRV). A compiler plugin cannot analyze programs that use features implemented after the release date of the plugin's toolchain. The MaxSRV for every version of `rustc_plugin` is listed below:
+
+* v0.6 (`nightly-2023-04-12`) - rustc 1.69
+
 
 [Flowistry]: https://github.com/willcrichton/flowistry/
 [Aquascope]: https://github.com/cognitive-engineering-lab/aquascope
@@ -46,3 +53,5 @@ The `rustc_plugin` framework is responsible for marshalling arguments from the t
 [example]: https://github.com/cognitive-engineering-lab/rustc_plugin/tree/main/crates/rustc_plugin/examples/print-all-items
 [docs]: https://cognitive-engineering-lab.github.io/rustc_plugin/nightly-2023-04-12-v0.1.4/rustc_plugin/
 [docs-utils]: https://cognitive-engineering-lab.github.io/rustc_plugin/nightly-2023-04-12-v0.1.4/rustc_utils/
+[msrv]: https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field
+
