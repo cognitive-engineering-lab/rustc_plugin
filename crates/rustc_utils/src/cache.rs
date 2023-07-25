@@ -1,4 +1,21 @@
-//! Data structure for memoizing computations.
+//! Data structures for memoizing computations.
+//! 
+//! Contruct new caches using [`Default::default`], then construct/retrieve
+//! elements with `get`.
+//! 
+//! In terms of choice, 
+//! - [`CopyCache`] should be used for expensive computations that create cheap
+//!   (i.e. small) values.
+//! - [`Cache`] should be used for expensive computations that create expensive
+//!   (i.e. large) values.
+//! - [`RecursionBreakingCache`] is the same as [`Cache`] except that it should
+//!   be used if the construction function for your values is going to call
+//!   `get` on the same cache. It detects if such a call is made with the same
+//!   key, which causes infinite recursion when [`Cache`] is used.
+//! 
+//! When in doubt the safest version is [`RecursionBreakingCache`] and if you
+//! don't anticipate recursion to occur you can always call `unwrap()` on it's
+//! result.
 
 use std::{cell::RefCell, hash::Hash, mem, pin::Pin};
 
@@ -11,6 +28,7 @@ impl<In, Out> Cache<In, Out>
 where
   In: Hash + Eq + Clone,
 {
+  /// Size of the cache
   pub fn len(&self) -> usize {
     self.0.borrow().len()
   }
@@ -47,6 +65,7 @@ where
   In: Hash + Eq + Clone,
   Out: Copy,
 {
+  /// Size of the cache
   pub fn len(&self) -> usize {
     self.0.borrow().len()
   }
@@ -77,6 +96,7 @@ where
   In: Hash + Eq + Clone,
   Out: Unpin,
 {
+  /// Size of the cache
   pub fn len(&self) -> usize {
     self.0.borrow().len()
   }
