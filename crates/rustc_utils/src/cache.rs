@@ -11,6 +11,9 @@ impl<In, Out> Cache<In, Out>
 where
   In: Hash + Eq + Clone,
 {
+  pub fn len(&self) -> usize {
+    self.0.borrow().len()
+  }
   /// Returns the cached value for the given key, or runs `compute` if
   /// the value is not in cache.
   pub fn get<'a>(&'a self, key: In, compute: impl FnOnce(In) -> Out) -> &'a Out {
@@ -44,6 +47,9 @@ where
   In: Hash + Eq + Clone,
   Out: Copy,
 {
+  pub fn len(&self) -> usize {
+    self.0.borrow().len()
+  }
   /// Returns the cached value for the given key, or runs `compute` if
   /// the value is not in cache.
   pub fn get(&self, key: In, compute: impl FnOnce(In) -> Out) -> Out {
@@ -57,6 +63,48 @@ where
 impl<In, Out> Default for CopyCache<In, Out> {
   fn default() -> Self {
     CopyCache(RefCell::new(HashMap::default()))
+  }
+}
+
+/// This cache alters the [`Self::get`] method signature to return
+/// an [`Option`] of a reference. In particular the method will return [`None`]
+/// if it is called *with the same key* while computing a construction function
+/// for that key.
+pub struct RecursionBreakingCache<In, Out>(RefCell<HashMap<In, Option<Pin<Box<Out>>>>>);
+
+impl<In, Out> RecursionBreakingCache<In, Out>
+where
+  In: Hash + Eq + Clone,
+  Out: Unpin,
+{
+  pub fn len(&self) -> usize {
+    self.0.borrow().len()
+  }
+  /// Get or compute the value for this key. Returns `None` if the `compute`
+  /// function calls this [`get`] function again *with the same key*. Calls to
+  /// [`get`] with different keys are allowed.
+  pub fn get<'a>(&'a self, key: In, compute: impl FnOnce(In) -> Out) -> Option<&'a Out> {
+    if !self.0.borrow().contains_key(&key) {
+      self.0.borrow_mut().insert(key.clone(), None);
+      let out = Pin::new(Box::new(compute(key.clone())));
+      self.0.borrow_mut().insert(key.clone(), Some(out));
+    }
+
+    let cache = self.0.borrow();
+    // Important here to first `unwrap` the `Option` created by `get`, then
+    // propagate the potential option stored in the map.
+    let entry = cache.get(&key).expect("invariant broken").as_ref()?;
+
+    // SAFETY: because the entry is pinned, it cannot move and this pointer will
+    // only be invalidated if Cache is dropped. The returned reference has a lifetime
+    // equal to Cache, so Cache cannot be dropped before this reference goes out of scope.
+    Some(unsafe { std::mem::transmute::<&'_ Out, &'a Out>(&**entry) })
+  }
+}
+
+impl<In, Out> Default for RecursionBreakingCache<In, Out> {
+  fn default() -> Self {
+    Self(RefCell::new(HashMap::default()))
   }
 }
 
