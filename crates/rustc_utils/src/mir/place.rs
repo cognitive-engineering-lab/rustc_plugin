@@ -521,7 +521,7 @@ impl<'tcx> TypeVisitor<TyCtxt<'tcx>> for CollectRegions<'tcx> {
         StoppingCondition::BeforeRefs => {}
       },
 
-      TyKind::Closure(_, substs) => {
+      TyKind::Closure(_, substs) | TyKind::Generator(_, substs, _) => {
         self.visit_ty(substs.as_closure().tupled_upvars_ty());
       }
 
