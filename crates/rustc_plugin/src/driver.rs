@@ -104,6 +104,16 @@ pub fn driver_main<T: RustcPlugin>(plugin: T) {
   exit(rustc_driver::catch_with_exit_code(move || {
     let mut orig_args: Vec<String> = env::args().collect();
 
+    let hash_check_arg = orig_args
+      .iter()
+      .enumerate()
+      .find(|elem| elem.1 == crate::EXEC_HASH_ARG)
+      .map(|t| t.0)
+      .unwrap();
+
+    orig_args.remove(hash_check_arg);
+    orig_args.remove(hash_check_arg);
+
     let (have_sys_root_arg, sys_root) = get_sysroot(&orig_args);
 
     if orig_args.iter().any(|a| a == "--version" || a == "-V") {
