@@ -141,7 +141,7 @@ where
 
     *self.0.borrow_mut()
       .get(&key)
-      .expect("invariant proken")
+      .expect("invariant broken")
   }
 }
 
