@@ -23,14 +23,23 @@
 //! [`CopyCache`]:
 //!
 //! ```rs
-//! let cache = CopyCache::default();
-//! let next_fib = |this| {
-//!   if this <= 1 { return this; }
-//!   let fib_1 = cache.get(this - 1, next_fib);
-//!   let fib_2 = cache.get(this - 2, next_fib);
-//!   fib_1 + fib_2
-//! };
-//! let fib_5 = cache.get(5, next_fib);
+//! struct Fib(CopyCache<u32, u32>);
+//! 
+//! impl Fib {
+//!   fn get(&self, i: u32) -> u32 {
+//!     self.0.get(i, |_| {
+//!       if this <= 1 {
+//!         return this;
+//!       }
+//!       let fib_1 = self.get(this - 1);
+//!       let fib_2 = self.get(this - 2);
+//!       fib_1 + fib_2
+//!     })
+//!   }
+//! }
+//! 
+//! let cache = Fib(Default::default());
+//! let fib_5 = cache.get(5);
 //! ```
 //!
 //! This use of recursive [`get`](CopyCache::get) calls is perfectly legal.
