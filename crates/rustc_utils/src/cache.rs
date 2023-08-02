@@ -69,7 +69,7 @@ where
   ///
   /// # Panics
   ///
-  /// Returns `None` if this is a recursive invocation of `get` for key `key`.
+  /// If this is a recursive invocation for this key.
   pub fn get<'a>(&'a self, key: In, compute: impl FnOnce(In) -> Out) -> &'a Out {
     self
       .get_maybe_recursive(key, compute)
@@ -129,7 +129,7 @@ where
   ///
   /// # Panics
   ///
-  /// Returns `None` if this is a recursive invocation of `get` for key `key`.
+  /// If this is a recursive invocation for this key.
   pub fn get(&self, key: In, compute: impl FnOnce(In) -> Out) -> Out {
     self
       .get_maybe_recursive(key, compute)
@@ -175,5 +175,33 @@ mod test {
     assert_eq!(*y, 1);
     assert_eq!(*z, 0);
     assert!(std::ptr::eq(x, z));
+  }
+
+  #[test]
+  fn test_recursion_breaking() {
+    struct RecursiveUse(Cache<i32, i32>);
+    impl RecursiveUse {
+      fn get_infinite_recursion(&self, i: i32) -> i32 {
+        self
+          .0
+          .get_maybe_recursive(i, |_| i + self.get_infinite_recursion(i))
+          .copied()
+          .unwrap_or(-18)
+      }
+      fn get_safe_recursion(&self, i: i32) -> i32 {
+        *self.0.get(i, |_| {
+          if i == 0 {
+            0
+          } else {
+            self.get_safe_recursion(i - 1) + i
+          }
+        })
+      }
+    }
+
+    let cache = RecursiveUse(Default::default());
+
+    assert_eq!(cache.get_infinite_recursion(60), 42);
+    assert_eq!(cache.get_safe_recursion(5), 15);
   }
 }
