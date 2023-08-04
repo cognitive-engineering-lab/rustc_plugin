@@ -75,6 +75,7 @@ pub fn cli_main<T: RustcPlugin>(plugin: T) {
   }
 
   let args_str = serde_json::to_string(&args.args).unwrap();
+  log::debug!("{PLUGIN_ARGS}={args_str}");
   cmd.env(PLUGIN_ARGS, args_str);
 
   // HACK: if running on the rustc codebase, this env var needs to exist

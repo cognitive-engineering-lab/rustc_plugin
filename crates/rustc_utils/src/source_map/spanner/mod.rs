@@ -110,9 +110,11 @@ impl<'tcx> Spanner<'tcx> {
 
     let mut hir_spans = Vec::new();
 
-    // Include the MIR span
-    hir_spans.push(mir_span);
-
+    // Include the MIR span, skipping spans that get mapped to the end brace of a body
+    if mir_span != body.span.shrink_to_hi() {
+      hir_spans.push(mir_span);
+    }
+    
     // Include the span for the immediately enclosing HIR node
     if let Some(spans) = self.hir_spans(hir_id, EnclosingHirSpans::OuterOnly) {
       hir_spans.extend(spans);
