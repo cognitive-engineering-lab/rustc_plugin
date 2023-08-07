@@ -24,7 +24,7 @@
 //!
 //! ```rs
 //! struct Fib(CopyCache<u32, u32>);
-//! 
+//!
 //! impl Fib {
 //!   fn get(&self, i: u32) -> u32 {
 //!     self.0.get(i, |_| {
@@ -37,7 +37,7 @@
 //!     })
 //!   }
 //! }
-//! 
+//!
 //! let cache = Fib(Default::default());
 //! let fib_5 = cache.get(5);
 //! ```
@@ -79,7 +79,7 @@ where
   /// # Panics
   ///
   /// If this is a recursive invocation for this key.
-  pub fn get<'a>(&'a self, key: In, compute: impl FnOnce(In) -> Out) -> &'a Out {
+  pub fn get(&self, key: In, compute: impl FnOnce(In) -> Out) -> &Out {
     self
       .get_maybe_recursive(key, compute)
       .unwrap_or_else(recursion_panic)

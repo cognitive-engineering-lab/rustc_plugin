@@ -114,7 +114,7 @@ impl<'tcx> Spanner<'tcx> {
     if mir_span != body.span.shrink_to_hi() {
       hir_spans.push(mir_span);
     }
-    
+
     // Include the span for the immediately enclosing HIR node
     if let Some(spans) = self.hir_spans(hir_id, EnclosingHirSpans::OuterOnly) {
       hir_spans.extend(spans);

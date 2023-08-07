@@ -12,6 +12,7 @@ use crate::CrateFilter;
 pub const RUN_ON_ALL_CRATES: &str = "RUSTC_PLUGIN_ALL_TARGETS";
 pub const SPECIFIC_CRATE: &str = "SPECIFIC_CRATE";
 pub const SPECIFIC_TARGET: &str = "SPECIFIC_TARGET";
+pub const CARGO_VERBOSE: &str = "CARGO_VERBOSE";
 
 /// The top-level function that should be called in your user-facing binary.
 pub fn cli_main<T: RustcPlugin>(plugin: T) {
@@ -43,8 +44,14 @@ pub fn cli_main<T: RustcPlugin>(plugin: T) {
 
   cmd
     .env("RUSTC_WORKSPACE_WRAPPER", path)
-    .args(["check", "-vv", "--target-dir"])
+    .args(["check", "--target-dir"])
     .arg(&target_dir);
+
+  if env::var(CARGO_VERBOSE).is_ok() {
+    cmd.arg("-vv");
+  } else {
+    cmd.arg("-q");
+  }
 
   let workspace_members = metadata
     .workspace_members
@@ -95,6 +102,9 @@ fn only_run_on_file(
   workspace_members: &[&cargo_metadata::Package],
   target_dir: &Utf8Path,
 ) {
+  // We compare this against canonicalized paths, so it must be canonicalized too
+  let file_path = file_path.canonicalize().unwrap();
+
   // Find the package and target that corresponds to a given file path
   let mut matching = workspace_members
     .iter()
@@ -104,6 +114,7 @@ fn only_run_on_file(
         .iter()
         .filter(|target| {
           let src_path = target.src_path.canonicalize().unwrap();
+          log::trace!("Package {} has src path {}", pkg.name, src_path.display());
           file_path.starts_with(src_path.parent().unwrap())
         })
         .collect::<Vec<_>>();
