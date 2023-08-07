@@ -20,7 +20,7 @@
   let_chains,            // for places_conflict module
   exact_size_is_empty,   // for graphviz module
 )]
-#![allow(clippy::len_zero)]
+#![allow(clippy::len_zero, clippy::len_without_is_empty)]
 
 extern crate either;
 extern crate rustc_borrowck;
