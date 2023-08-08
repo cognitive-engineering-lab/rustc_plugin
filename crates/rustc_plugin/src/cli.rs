@@ -166,17 +166,22 @@ fn only_run_on_file(
   // Add compile filter to specify the target corresponding to the given file
   cmd.arg("-p").arg(format!("{}:{}", pkg.name, pkg.version));
 
-  let kind = &target.kind[0];
-  if kind != "proc-macro" {
-    cmd.arg(format!("--{kind}"));
+  enum CompileKind {
+    Lib, Bin, ProcMacro
   }
 
-  cmd.env(SPECIFIC_CRATE, &pkg.name.replace('-', "_"));
-  cmd.env(SPECIFIC_TARGET, kind);
+  // kind string should be one of the ones listed here:
+  // https://doc.rust-lang.org/cargo/reference/cargo-targets.html#the-crate-type-field
+  let kind_str = &target.kind[0];  
+  let kind = match kind_str.as_str() {
+    "lib" | "rlib" | "dylib" | "staticlib" | "cdylib" => CompileKind::Lib,
+    "bin" => CompileKind::Bin,
+    "proc-macro" => CompileKind::ProcMacro,
+    _ => unreachable!("unexpected cargo crate type: {kind_str}"),
+  };
 
-  match kind.as_str() {
-    "proc-macro" => {}
-    "lib" => {
+  match kind {
+    CompileKind::Lib => {
       // If the rmeta files were previously generated for the lib (e.g. by running the plugin
       // on a reverse-dep), then we have to remove them or else Cargo will memoize the plugin.
       let deps_dir = target_dir.join("debug").join("deps");
@@ -191,15 +196,22 @@ fn only_run_on_file(
           }
         }
       }
+      
+      cmd.arg("--lib");
     }
-    _ => {
-      cmd.arg(&target.name);
+    CompileKind::Bin => {
+      cmd.args(["--bin", &target.name]);
     }
-  };
+    CompileKind::ProcMacro => {}
+  }
+  
+  cmd.env(SPECIFIC_CRATE, &pkg.name.replace('-', "_"));
+  cmd.env(SPECIFIC_TARGET, kind_str);
+
   log::debug!(
     "Package: {}, target kind {}, target name {}",
     pkg.name,
-    kind,
+    kind_str,
     target.name
   );
 }
