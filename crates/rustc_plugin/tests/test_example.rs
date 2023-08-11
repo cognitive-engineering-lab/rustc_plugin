@@ -17,7 +17,6 @@ fn run(dir: &str, f: impl FnOnce(&mut Command)) -> Result<String> {
       "examples/print-all-items",
       "--debug",
       "--locked",
-      "--offline",
       "--root",
     ]);
     cmd.arg(&root);
