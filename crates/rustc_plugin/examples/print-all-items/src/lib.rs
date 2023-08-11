@@ -23,6 +23,9 @@ pub struct PrintAllItemsPlugin;
 pub struct PrintAllItemsPluginArgs {
   #[arg(short, long)]
   allcaps: bool,
+
+  #[clap(last = true)]
+  cargo_args: Vec<String>,
 }
 
 impl RustcPlugin for PrintAllItemsPlugin {
@@ -42,7 +45,12 @@ impl RustcPlugin for PrintAllItemsPlugin {
   fn args(&self, _target_dir: &Utf8Path) -> RustcPluginArgs<Self::Args> {
     let args = PrintAllItemsPluginArgs::parse_from(env::args().skip(1));
     let filter = CrateFilter::AllCrates;
-    RustcPluginArgs { args, filter }
+    let cargo_args = args.cargo_args.clone();
+    RustcPluginArgs {
+      args,
+      filter,
+      cargo_args,
+    }
   }
 
   // In the driver, we use the Rustc API to start a compiler session

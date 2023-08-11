@@ -91,6 +91,8 @@ pub fn cli_main<T: RustcPlugin>(plugin: T) {
     cmd.env("CFG_RELEASE", "");
   }
 
+  cmd.args(args.cargo_args);
+
   let exit_status = cmd.status().expect("failed to wait for cargo?");
 
   exit(exit_status.code().unwrap_or(-1));
@@ -167,12 +169,14 @@ fn only_run_on_file(
   cmd.arg("-p").arg(format!("{}:{}", pkg.name, pkg.version));
 
   enum CompileKind {
-    Lib, Bin, ProcMacro
+    Lib,
+    Bin,
+    ProcMacro,
   }
 
   // kind string should be one of the ones listed here:
   // https://doc.rust-lang.org/cargo/reference/cargo-targets.html#the-crate-type-field
-  let kind_str = &target.kind[0];  
+  let kind_str = &target.kind[0];
   let kind = match kind_str.as_str() {
     "lib" | "rlib" | "dylib" | "staticlib" | "cdylib" => CompileKind::Lib,
     "bin" => CompileKind::Bin,
@@ -196,7 +200,7 @@ fn only_run_on_file(
           }
         }
       }
-      
+
       cmd.arg("--lib");
     }
     CompileKind::Bin => {
@@ -204,7 +208,7 @@ fn only_run_on_file(
     }
     CompileKind::ProcMacro => {}
   }
-  
+
   cmd.env(SPECIFIC_CRATE, &pkg.name.replace('-', "_"));
   cmd.env(SPECIFIC_TARGET, kind_str);
 

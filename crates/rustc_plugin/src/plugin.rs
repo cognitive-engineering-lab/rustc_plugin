@@ -22,6 +22,9 @@ pub struct RustcPluginArgs<Args> {
 
   /// Which crates you want to run the plugin on.
   pub filter: CrateFilter,
+
+  /// Additional arguments to pass to `cargo check`, such as `--features <feat>`
+  pub cargo_args: Vec<String>,
 }
 
 /// Interface between your plugin and the rustc_plugin framework.

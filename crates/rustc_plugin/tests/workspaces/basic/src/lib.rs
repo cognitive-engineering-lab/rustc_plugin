@@ -2,6 +2,11 @@ pub fn add(left: usize, right: usize) -> usize {
   left + right
 }
 
+#[cfg(feature = "sub")]
+pub fn sub(left: usize, right: usize) -> usize {
+  left - right
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
