@@ -11,7 +11,7 @@
 The Rust compiler's interface is not stable, so the only sensible way to develop a Rust compiler plugin is by pinning to a specific nightly. Each version of `rustc_plugin` is pinned to one nightly, and you *have* to use the same nightly version that we do. Therefore each release of `rustc_plugin` has a semantic version number (e.g. `0.1.0`) and the nightly version is added as a prerelease label (e.g. `-nightly-2023-04-12`). You can add a dependency to your `Cargo.toml` like this:
  
 ```toml
-rustc_plugin = "=0.7.0-nightly-2023-04-12"
+rustc_plugin = "=0.6.3-nightly-2023-04-12"
 ```
 
 We will treat a change to the nightly version as a breaking change, so the semantic version will be correspondingly updated as a breaking update.
@@ -44,7 +44,7 @@ The `rustc_plugin` framework is responsible for marshalling arguments from the t
 
 Normally, Rust libraries have a [minimum supported Rust version][msrv] because they promise to not use any breaking features implemented after that version. Rust compiler plugins are the opposite &mdash; they have a **maximum** supported Rust version (MaxSRV). A compiler plugin cannot analyze programs that use features implemented after the release date of the plugin's toolchain. The MaxSRV for every version of `rustc_plugin` is listed below:
 
-* v0.6, v0.7 (`nightly-2023-04-12`) - rustc 1.69
+* v0.6 (`nightly-2023-04-12`) - rustc 1.69
 
 
 [Flowistry]: https://github.com/willcrichton/flowistry/

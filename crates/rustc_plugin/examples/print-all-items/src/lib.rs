@@ -6,7 +6,7 @@ extern crate rustc_driver;
 extern crate rustc_interface;
 extern crate rustc_middle;
 
-use std::{borrow::Cow, env};
+use std::{borrow::Cow, env, process::Command};
 
 use clap::Parser;
 use rustc_middle::ty::TyCtxt;
@@ -45,12 +45,15 @@ impl RustcPlugin for PrintAllItemsPlugin {
   fn args(&self, _target_dir: &Utf8Path) -> RustcPluginArgs<Self::Args> {
     let args = PrintAllItemsPluginArgs::parse_from(env::args().skip(1));
     let filter = CrateFilter::AllCrates;
-    let cargo_args = args.cargo_args.clone();
     RustcPluginArgs {
       args,
       filter,
-      cargo_args,
     }
+  }
+
+  // Pass Cargo arguments (like --feature) from the top-level CLI to Cargo.
+  fn modify_cargo(&self, cargo: &mut Command, args: &Self::Args) {
+    cargo.args(&args.cargo_args);
   }
 
   // In the driver, we use the Rustc API to start a compiler session
@@ -63,7 +66,7 @@ impl RustcPlugin for PrintAllItemsPlugin {
     let mut callbacks = PrintAllItemsCallbacks { args: plugin_args };
     let compiler = rustc_driver::RunCompiler::new(&compiler_args, &mut callbacks);
     compiler.run()
-  }
+  }  
 }
 
 struct PrintAllItemsCallbacks {

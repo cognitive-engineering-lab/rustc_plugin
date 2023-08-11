@@ -1,4 +1,4 @@
-use std::{borrow::Cow, path::PathBuf};
+use std::{borrow::Cow, path::PathBuf, process::Command};
 
 use cargo_metadata::camino::Utf8Path;
 use serde::{de::DeserializeOwned, Serialize};
@@ -22,9 +22,6 @@ pub struct RustcPluginArgs<Args> {
 
   /// Which crates you want to run the plugin on.
   pub filter: CrateFilter,
-
-  /// Additional arguments to pass to `cargo check`, such as `--features <feat>`
-  pub cargo_args: Vec<String>,
 }
 
 /// Interface between your plugin and the rustc_plugin framework.
@@ -48,6 +45,10 @@ pub trait RustcPlugin: Sized {
 
   /// Parses and returns the CLI arguments for the plugin.
   fn args(&self, target_dir: &Utf8Path) -> RustcPluginArgs<Self::Args>;
+
+  /// Optionally modify the `cargo` command that launches rustc.
+  /// For example, you could pass a `--feature` flag here.
+  fn modify_cargo(&self, _cargo: &mut Command, _args: &Self::Args) {}
 
   /// Executes the plugin with a set of compiler and plugin args.
   fn run(
