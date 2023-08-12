@@ -45,10 +45,7 @@ impl RustcPlugin for PrintAllItemsPlugin {
   fn args(&self, _target_dir: &Utf8Path) -> RustcPluginArgs<Self::Args> {
     let args = PrintAllItemsPluginArgs::parse_from(env::args().skip(1));
     let filter = CrateFilter::AllCrates;
-    RustcPluginArgs {
-      args,
-      filter,
-    }
+    RustcPluginArgs { args, filter }
   }
 
   // Pass Cargo arguments (like --feature) from the top-level CLI to Cargo.
@@ -66,7 +63,7 @@ impl RustcPlugin for PrintAllItemsPlugin {
     let mut callbacks = PrintAllItemsCallbacks { args: plugin_args };
     let compiler = rustc_driver::RunCompiler::new(&compiler_args, &mut callbacks);
     compiler.run()
-  }  
+  }
 }
 
 struct PrintAllItemsCallbacks {
