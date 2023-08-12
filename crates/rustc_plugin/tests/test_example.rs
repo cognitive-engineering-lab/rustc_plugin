@@ -4,7 +4,7 @@ use anyhow::{ensure, Context, Result};
 
 static SETUP: Once = Once::new();
 
-fn run(dir: &str, f: impl FnOnce(&mut Command)) -> Result<()> {
+fn run(dir: &str, f: impl FnOnce(&mut Command)) -> Result<String> {
   let root = env::temp_dir().join("rustc_plugin");
 
   let heredir = Path::new(".").canonicalize()?;
@@ -44,25 +44,48 @@ fn run(dir: &str, f: impl FnOnce(&mut Command)) -> Result<()> {
 
   let _ = fs::remove_dir_all(ws.join("target"));
 
-  let status = cmd.status().context("Process failed")?;
-  ensure!(status.success(), "Process exited with non-zero exit code");
+  let output = cmd.output().context("Process failed")?;
+  ensure!(
+    output.status.success(),
+    "Process exited with non-zero exit code. Stderr:\n{}",
+    String::from_utf8(output.stderr)?
+  );
 
+  Ok(String::from_utf8(output.stdout)?)
+}
+
+// TODO: why do these tests need to be run sequentially?
+
+#[test]
+fn basic() -> Result<()> {
+  let output = run("workspaces/basic", |_cmd| {})?;
+  assert!(output.contains(r#"There is an item "add" of type "function""#));
   Ok(())
 }
 
 #[test]
-fn basic() -> Result<()> {
-  run("workspaces/basic", |_cmd| {})
+fn arg() -> Result<()> {
+  let output = run("workspaces/basic", |cmd| {
+    cmd.arg("-a");
+  })?;
+  assert!(output.contains(r#"THERE IS AN ITEM "ADD" OF TYPE "FUNCTION""#));
+  Ok(())
 }
 
 #[test]
-fn basic_with_arg() -> Result<()> {
-  run("workspaces/basic", |cmd| {
-    cmd.arg("-a");
-  })
+fn feature() -> Result<()> {
+  let output = run("workspaces/basic", |cmd| {
+    cmd.args(["--", "--features", "sub"]);
+  })?;
+  assert!(
+    output.contains(r#"There is an item "sub" of type "function""#),
+    "output:\n{output}"
+  );
+  Ok(())
 }
 
 #[test]
 fn multi() -> Result<()> {
-  run("workspaces/multi", |_cmd| {})
+  run("workspaces/multi", |_cmd| {})?;
+  Ok(())
 }
