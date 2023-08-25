@@ -41,6 +41,7 @@ extern crate rustc_session;
 extern crate rustc_span;
 extern crate rustc_target;
 extern crate rustc_trait_selection;
+extern crate rustc_type_ir;
 extern crate smallvec;
 
 pub mod cache;
@@ -59,3 +60,23 @@ pub use crate::{
   },
   source_map::span::{SpanDataExt, SpanExt},
 };
+
+/// Utility for hashset literals. Same as maplit::hashset but works with FxHasher.
+#[macro_export]
+macro_rules! hashset {
+  (@single $($x:tt)*) => (());
+  (@count $($rest:expr),*) => (<[()]>::len(&[$(hashset!(@single $rest)),*]));
+
+  ($($key:expr,)+) => { hashset!($($key),+) };
+  ($($key:expr),*) => {
+      {
+          let _cap = hashset!(@count $($key),*);
+          let mut _set = ::rustc_data_structures::fx::FxHashSet::default();
+          let _ = _set.try_reserve(_cap);
+          $(
+              let _ = _set.insert($key);
+          )*
+          _set
+      }
+  };
+}

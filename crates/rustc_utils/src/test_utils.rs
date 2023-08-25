@@ -1,14 +1,20 @@
 //! Running rustc and Flowistry in tests.
 
-use std::{fs, io, panic, path::Path, process::Command, sync::LazyLock};
+use std::{
+  fmt::Debug, fs, hash::Hash, io, panic, path::Path, process::Command, sync::LazyLock,
+};
 
 use anyhow::{anyhow, ensure, Context, Result};
 use log::debug;
 use rustc_borrowck::BodyWithBorrowckFacts;
 use rustc_data_structures::fx::{FxHashMap as HashMap, FxHashSet as HashSet};
 use rustc_hir::{BodyId, ItemKind};
-use rustc_middle::ty::TyCtxt;
+use rustc_middle::{
+  mir::{Body, HasLocalDecls, Local, Place},
+  ty::TyCtxt,
+};
 use rustc_span::source_map::FileLoader;
+use rustc_target::abi::{FieldIdx, VariantIdx};
 
 use crate::{
   mir::borrowck_facts,
@@ -17,7 +23,7 @@ use crate::{
     find_bodies::find_enclosing_bodies,
     range::{BytePos, ByteRange, CharPos, CharRange, ToSpan},
   },
-  BodyExt,
+  BodyExt, PlaceExt,
 };
 
 pub struct StringLoader(pub String);
@@ -255,6 +261,103 @@ pub fn compare_ranges(
 
   check(missing, "Analysis did NOT have EXPECTED");
   check(extra, "Actual DID have UNEXPECTED");
+}
+
+pub struct Placer<'a, 'tcx> {
+  tcx: TyCtxt<'tcx>,
+  body: &'a Body<'tcx>,
+  local_map: HashMap<String, Local>,
+}
+
+impl<'a, 'tcx> Placer<'a, 'tcx> {
+  pub fn new(tcx: TyCtxt<'tcx>, body: &'a Body<'tcx>) -> Self {
+    let local_map = body.debug_info_name_map();
+    Placer {
+      tcx,
+      body,
+      local_map,
+    }
+  }
+
+  pub fn local(&self, name: &str) -> PlaceBuilder<'a, 'tcx> {
+    PlaceBuilder {
+      place: Place::from_local(self.local_map[name], self.tcx),
+      body: self.body,
+      tcx: self.tcx,
+    }
+  }
+}
+
+#[derive(Copy, Clone)]
+pub struct PlaceBuilder<'a, 'tcx> {
+  tcx: TyCtxt<'tcx>,
+  body: &'a Body<'tcx>,
+  place: Place<'tcx>,
+}
+
+impl<'a, 'tcx> PlaceBuilder<'a, 'tcx> {
+  pub fn field(mut self, i: usize) -> Self {
+    let f = FieldIdx::from_usize(i);
+    let ty = self
+      .place
+      .ty(self.body.local_decls(), self.tcx)
+      .field_ty(self.tcx, f);
+    self.place = self.tcx.mk_place_field(self.place, f, ty);
+    self
+  }
+
+  pub fn deref(mut self) -> Self {
+    self.place = self.tcx.mk_place_deref(self.place);
+    self
+  }
+
+  pub fn downcast(mut self, i: usize) -> Self {
+    let ty = self.place.ty(self.body.local_decls(), self.tcx).ty;
+    let adt_def = ty.ty_adt_def().unwrap();
+    let v = VariantIdx::from_usize(i);
+    self.place = self.tcx.mk_place_downcast(self.place, adt_def, v);
+    self
+  }
+
+  pub fn index(mut self, i: usize) -> Self {
+    self.place = self.tcx.mk_place_index(self.place, Local::from_usize(i));
+    self
+  }
+
+  pub fn mk(self) -> Place<'tcx> {
+    self.place
+  }
+}
+
+pub fn compare_sets<T: PartialEq + Eq + Clone + Hash + Debug>(
+  expected: impl IntoIterator<Item = T>,
+  actual: impl IntoIterator<Item = T>,
+) {
+  let expected = expected.into_iter().collect::<HashSet<_>>();
+  let actual = actual.into_iter().collect::<HashSet<_>>();
+
+  let missing = &expected - &actual;
+  let extra = &actual - &expected;
+
+  let check = |s: HashSet<T>, message: &str| {
+    if s.len() > 0 {
+      println!(
+        "Expected:\n{}",
+        textwrap::indent(&format!("{expected:#?}"), "  ")
+      );
+      println!(
+        "Actual:\n{}",
+        textwrap::indent(&format!("{actual:#?}"), "  ")
+      );
+      panic!(
+        "{message} ranges:\n{}",
+        textwrap::indent(&format!("{s:#?}"), "  ")
+      );
+    }
+  };
+
+  check(missing, "Result did NOT have EXPECTED");
+  check(extra, "Result DID have UNEXPECTED");
 }
 
 #[cfg(test)]
