@@ -9,5 +9,6 @@ rustc_private = true
 [dependencies]
 rustc_plugin = { path = "../.." }
 env_logger = "0.10"
-clap = {version = "4", features = ["derive"]}
+# Note: have to bump rustc_plugin nightly for clap>4.4 compatibility
+clap = {version = "=4.3.23", features = ["derive"]}
 serde = {version = "1", features = ["derive"]}
