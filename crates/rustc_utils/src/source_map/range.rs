@@ -147,8 +147,15 @@ impl FilenameIndex {
 #[cfg_attr(feature = "ts-rs", derive(TS))]
 pub struct BytePos(pub usize);
 
-/// CharPos is designed to exactly match VSCode's convention.
-/// Both line and column are 0-based.
+/// CharPos is designed to match VSCode's vscode.Position type.
+/// Both line and column are 0-based. 
+/// 
+/// A previous version of CharPos used a global character-based index,
+/// naively thinking this was the same as VSCode's notion of an "offset".
+/// However, for files using CRLF line endings, VSCode ignores the `\r`
+/// when computing offsets, while Rustc does not. The unhappy compromise
+/// is to use line-column as a common coordinate system, which is robust
+/// to choice of line endings.
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 #[cfg_attr(feature = "ts-rs", derive(TS))]
