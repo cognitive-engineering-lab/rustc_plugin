@@ -60,8 +60,8 @@ thread_local! {
     filename: *filename,
   });
   pub static DUMMY_CHAR_RANGE: CharRange = DUMMY_FILE.with(|filename| CharRange {
-    start: CharPos(0),
-    end: CharPos(0),
+    start: CharPos { line: 0, column: 0 },
+    end: CharPos { line: 0, column: 0 },
     filename: *filename,
   });
 }

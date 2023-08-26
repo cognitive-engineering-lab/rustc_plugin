@@ -26,13 +26,19 @@ struct CharByteMapping {
 }
 
 impl CharByteMapping {
-  pub fn build(s: &str) -> Self {
+  pub fn build(file: &SourceFile) -> Self {
     let mut byte_to_char = HashMap::default();
     let mut char_to_byte = HashMap::default();
 
-    for (char_idx, (byte_idx, _)) in s.char_indices().enumerate() {
-      byte_to_char.insert(BytePos(byte_idx), CharPos(char_idx));
-      char_to_byte.insert(CharPos(char_idx), BytePos(byte_idx));
+    for line in 0 .. file.count_lines() {
+      let line_str = file.get_line(line).unwrap();
+      let line_start = file.line_bounds(line).start.0 as usize;
+      for (column, (byte_offset, _)) in line_str.char_indices().enumerate() {
+        let bpos = BytePos(line_start + byte_offset);
+        let cpos = CharPos { line, column };
+        byte_to_char.insert(bpos, cpos);
+        char_to_byte.insert(cpos, bpos);
+      }
     }
 
     CharByteMapping {
@@ -141,11 +147,15 @@ impl FilenameIndex {
 #[cfg_attr(feature = "ts-rs", derive(TS))]
 pub struct BytePos(pub usize);
 
+/// CharPos is designed to exactly match VSCode's convention.
+/// Both line and column are 0-based.
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 #[cfg_attr(feature = "ts-rs", derive(TS))]
-
-pub struct CharPos(pub usize);
+pub struct CharPos {
+  pub line: usize,
+  pub column: usize,
+}
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
@@ -176,8 +186,11 @@ impl ByteRange {
     let file = self.filename.find_source_file(source_map).unwrap();
     let get_char_pos = |rel_byte: BytePos| {
       let bpos = file.start_pos + rustc_span::BytePos(rel_byte.0 as u32);
-      let cpos = file.bytepos_to_file_charpos(bpos);
-      CharPos(cpos.0)
+      let (line, col) = file.lookup_file_pos(bpos);
+      CharPos {
+        line: line - 1,
+        column: col.0,
+      }
     };
 
     let char_start = get_char_pos(self.start);
@@ -200,9 +213,9 @@ impl ByteRange {
 
     CONTEXT.with(|ctx| {
       let ctx = ctx.borrow();
-      let mapping = ctx.char_byte_mapping.get(filename, |_| {
-        CharByteMapping::build(file.src.as_ref().unwrap().as_str())
-      });
+      let mapping = ctx
+        .char_byte_mapping
+        .get(filename, |_| CharByteMapping::build(&file));
       let byte_start = mapping.char_to_byte(char_start);
       let byte_end = mapping.char_to_byte(char_end);
       Ok(ByteRange {
@@ -266,14 +279,10 @@ pub trait ToSpan {
 }
 
 impl ToSpan for ByteRange {
-  fn to_span(&self, tcx: TyCtxt) -> Result<Span> {
-    let source_map = tcx.sess.source_map();
-    let source_file = self.filename.find_source_file(source_map)?;
-    let offset = source_file.start_pos;
-
+  fn to_span(&self, _tcx: TyCtxt) -> Result<Span> {
     Ok(Span::with_root_ctxt(
-      offset + rustc_span::BytePos(self.start.0 as u32),
-      offset + rustc_span::BytePos(self.end.0 as u32),
+      rustc_span::BytePos(self.start.0 as u32),
+      rustc_span::BytePos(self.end.0 as u32),
     ))
   }
 }
@@ -350,8 +359,7 @@ mod test {
   fn test_range() {
     let emoji = "🦀";
     let input = &format!(
-      r#"
-fn main() {{
+      r#"fn main() {{
   let x = "{emoji}";
 }}
 
@@ -371,8 +379,8 @@ fn main() {{
       id.to_span(tcx).unwrap_err();
 
       let id = FunctionIdentifier::Range(CharRange {
-        start: CharPos(0),
-        end: CharPos(1),
+        start: CharPos { line: 0, column: 0 },
+        end: CharPos { line: 0, column: 1 },
         filename,
       });
       id.to_span(tcx).unwrap();
@@ -384,9 +392,17 @@ fn main() {{
         filename,
       };
       let char_range = byte_range.as_char_range(source_map);
+      let emoji_line = 1;
+      let emoji_column = 11;
       assert_eq!(char_range, CharRange {
-        start: CharPos(emoji_index),
-        end: CharPos(emoji_index + 1),
+        start: CharPos {
+          line: emoji_line,
+          column: emoji_column
+        },
+        end: CharPos {
+          line: emoji_line,
+          column: emoji_column + 1
+        },
         filename
       });
     });
