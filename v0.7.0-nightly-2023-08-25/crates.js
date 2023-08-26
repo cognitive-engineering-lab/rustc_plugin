@@ -1,0 +1,1 @@
+window.ALL_CRATES = ["anyhow","camino","cargo_metadata","cargo_platform","cfg_if","intervaltree","itoa","log","proc_macro2","quote","rustc_plugin","rustc_tools_util","rustc_utils","ryu","semver","serde","serde_derive","serde_json","smallvec","syn","unicode_ident"];
