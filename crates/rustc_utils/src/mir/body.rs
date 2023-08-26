@@ -88,7 +88,7 @@ pub trait BodyExt<'tcx> {
   /// a file in the `target/` directory named `<function name>.pdf`.
   fn write_analysis_results<A>(
     &self,
-    results: &Results<'tcx, A>,
+    results: &mut Results<'tcx, A>,
     def_id: DefId,
     tcx: TyCtxt<'tcx>,
   ) -> Result<()>
@@ -208,7 +208,7 @@ impl<'tcx> BodyExt<'tcx> for Body<'tcx> {
   #[allow(unused)]
   fn write_analysis_results<A>(
     &self,
-    results: &Results<'tcx, A>,
+    results: &mut Results<'tcx, A>,
     def_id: DefId,
     tcx: TyCtxt<'tcx>,
   ) -> Result<()>
@@ -219,7 +219,7 @@ impl<'tcx> BodyExt<'tcx> for Body<'tcx> {
     cfg_if! {
       if #[cfg(feature = "graphviz")] {
         use rustc_graphviz as dot;
-        use super::graphviz;
+        use rustc_mir_dataflow::graphviz;
 
         let graphviz =
           graphviz::Formatter::new(self, results, graphviz::OutputStyle::AfterOnly);

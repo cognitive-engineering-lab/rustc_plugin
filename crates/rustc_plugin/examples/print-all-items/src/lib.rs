@@ -5,6 +5,7 @@
 extern crate rustc_driver;
 extern crate rustc_interface;
 extern crate rustc_middle;
+extern crate rustc_session;
 
 use std::{borrow::Cow, env, process::Command};
 
@@ -76,6 +77,7 @@ impl rustc_driver::Callbacks for PrintAllItemsCallbacks {
   // all the type-checking has completed.
   fn after_analysis<'tcx>(
     &mut self,
+    _handler: &rustc_session::EarlyErrorHandler,
     _compiler: &rustc_interface::interface::Compiler,
     queries: &'tcx rustc_interface::Queries<'tcx>,
   ) -> rustc_driver::Compilation {

@@ -15,7 +15,8 @@ use rustc_middle::{
   },
   traits::ObligationCause,
   ty::{
-    self, AdtKind, RegionKind, RegionVid, Ty, TyCtxt, TyKind, TypeAndMut, TypeVisitor,
+    self, AdtKind, Region, RegionKind, RegionVid, Ty, TyCtxt, TyKind, TypeAndMut,
+    TypeVisitor,
   },
 };
 use rustc_target::abi::{FieldIdx, VariantIdx};
@@ -310,7 +311,11 @@ impl<'tcx> PlaceExt<'tcx> for Place<'tcx> {
               let fields = match def.adt_kind() {
                 AdtKind::Struct => &def.non_enum_variant().fields,
                 AdtKind::Enum => {
-                  let Some(PlaceElem::Downcast(_, variant_idx)) = self.projection.get(index - 1) else { unimplemented!() } ;
+                  let Some(PlaceElem::Downcast(_, variant_idx)) =
+                    self.projection.get(index - 1)
+                  else {
+                    unimplemented!()
+                  };
                   &def.variant(*variant_idx).fields
                 }
                 kind => unimplemented!("{kind:?}"),
@@ -450,7 +455,7 @@ impl<'tcx> TypeVisitor<TyCtxt<'tcx>> for CollectRegions<'tcx> {
 
     match ty.kind() {
       _ if ty.is_box() => {
-        self.visit_region(tcx.mk_region_from_kind(RegionKind::ReVar(UNKNOWN_REGION)));
+        self.visit_region(Region::new_var(tcx, UNKNOWN_REGION));
         self.place_stack.push(ProjectionElem::Deref);
         self.visit_ty(ty.boxed_ty());
         self.place_stack.pop();
@@ -526,7 +531,7 @@ impl<'tcx> TypeVisitor<TyCtxt<'tcx>> for CollectRegions<'tcx> {
       }
 
       TyKind::RawPtr(TypeAndMut { ty, .. }) => {
-        self.visit_region(tcx.mk_region_from_kind(RegionKind::ReVar(UNKNOWN_REGION)));
+        self.visit_region(Region::new_var(tcx, UNKNOWN_REGION));
         self.place_stack.push(ProjectionElem::Deref);
         self.visit_ty(*ty);
         self.place_stack.pop();
@@ -625,7 +630,7 @@ impl<'tcx> TypeVisitor<TyCtxt<'tcx>> for CollectRegions<'tcx> {
 
 #[cfg(test)]
 mod test {
-  use rustc_borrowck::BodyWithBorrowckFacts;
+  use rustc_borrowck::consumers::BodyWithBorrowckFacts;
   use rustc_hir::BodyId;
   use rustc_middle::{
     mir::{Place, PlaceElem},

@@ -9,7 +9,9 @@ use std::{cmp::max, iter};
 use log::debug;
 use rustc_hir as hir;
 use rustc_middle::{
-  mir::{Body, BorrowKind, Local, Place, PlaceElem, PlaceRef, ProjectionElem},
+  mir::{
+    Body, BorrowKind, Local, MutBorrowKind, Place, PlaceElem, PlaceRef, ProjectionElem,
+  },
   ty::{self, TyCtxt},
 };
 
@@ -67,7 +69,7 @@ pub fn places_conflict<'tcx>(
     body,
     borrow_place,
     BorrowKind::Mut {
-      allow_two_phase_borrow: true,
+      kind: MutBorrowKind::TwoPhaseBorrow,
     },
     access_place.as_ref(),
     AccessDepth::Deep,

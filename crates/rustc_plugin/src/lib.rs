@@ -7,6 +7,7 @@
 
 extern crate rustc_driver;
 extern crate rustc_interface;
+extern crate rustc_session;
 
 #[doc(hidden)]
 pub use cargo_metadata::camino::Utf8Path;

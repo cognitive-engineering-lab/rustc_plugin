@@ -8,8 +8,5 @@ pub mod mutability;
 pub mod operand;
 pub mod place;
 
-#[cfg(feature = "graphviz")]
-#[allow(clippy::all, clippy::pedantic)]
-pub mod graphviz;
 #[allow(clippy::all, clippy::pedantic)]
 pub mod places_conflict;

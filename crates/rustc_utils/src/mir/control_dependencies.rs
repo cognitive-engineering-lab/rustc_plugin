@@ -15,7 +15,7 @@ use rustc_data_structures::graph::{
 };
 use rustc_index::{
   bit_set::{BitSet, HybridBitSet, SparseBitMatrix},
-  vec::Idx,
+  Idx,
 };
 use smallvec::SmallVec;
 
@@ -94,14 +94,13 @@ impl<Node: Idx> PostDominators<Node> {
       reversed.unreachable.remove(*n);
     }
 
-    let dominators = dominators::dominators(reversed);
+    let dominators = dominators::dominators(&reversed);
     PostDominators::<Node>(dominators)
   }
 
   /// Gets the node that immediately post-dominators `node`, if one exists.
   pub fn immediate_post_dominator(&self, node: Node) -> Option<Node> {
-    let reachable = self.0.is_reachable(node);
-    reachable.then(|| self.0.immediate_dominator(node))
+    self.0.immediate_dominator(node)
   }
 
   /// Gets all nodes that post-dominate `node`, if they exist.

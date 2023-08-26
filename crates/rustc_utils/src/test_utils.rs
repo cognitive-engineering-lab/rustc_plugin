@@ -6,7 +6,7 @@ use std::{
 
 use anyhow::{anyhow, ensure, Context, Result};
 use log::debug;
-use rustc_borrowck::BodyWithBorrowckFacts;
+use rustc_borrowck::consumers::BodyWithBorrowckFacts;
 use rustc_data_structures::fx::{FxHashMap as HashMap, FxHashSet as HashSet};
 use rustc_hir::{BodyId, ItemKind};
 use rustc_middle::{
