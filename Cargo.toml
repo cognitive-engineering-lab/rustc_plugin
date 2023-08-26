@@ -6,3 +6,5 @@ exclude = [
   "crates/rustc_plugin/examples/print-all-items", 
   "crates/rustc_plugin/tests/workspaces"
 ]
+
+resolver = "2"

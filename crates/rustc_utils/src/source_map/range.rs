@@ -9,7 +9,7 @@ use rustc_hir::{
   intravisit::{self, Visitor},
   BodyId,
 };
-use rustc_index::vec::IndexVec;
+use rustc_index::IndexVec;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::{source_map::SourceMap, FileName, RealFileName, SourceFile, Span};
 #[cfg(feature = "serde")]
@@ -148,8 +148,8 @@ impl FilenameIndex {
 pub struct BytePos(pub usize);
 
 /// CharPos is designed to match VSCode's vscode.Position type.
-/// Both line and column are 0-based. 
-/// 
+/// Both line and column are 0-based.
+///
 /// A previous version of CharPos used a global character-based index,
 /// naively thinking this was the same as VSCode's notion of an "offset".
 /// However, for files using CRLF line endings, VSCode ignores the `\r`

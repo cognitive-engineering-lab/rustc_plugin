@@ -3,7 +3,7 @@
 use rustc_data_structures::captures::Captures;
 use rustc_hir::def_id::DefId;
 use rustc_infer::infer::TyCtxtInferExt;
-use rustc_middle::ty::{subst::GenericArgKind, ParamEnv, Region, Ty, TyCtxt};
+use rustc_middle::ty::{GenericArgKind, ParamEnv, Region, Ty, TyCtxt};
 use rustc_trait_selection::infer::InferCtxtExt;
 
 /// Extension trait for [`Ty`].

@@ -19,6 +19,7 @@
   box_patterns,          // for ergonomics
   let_chains,            // for places_conflict module
   exact_size_is_empty,   // for graphviz module
+  impl_trait_in_assoc_type
 )]
 #![allow(clippy::len_zero, clippy::len_without_is_empty)]
 
@@ -53,7 +54,7 @@ pub mod test_utils;
 pub mod timer;
 
 pub use crate::{
-  hir::{region::RegionExt, ty::TyExt},
+  hir::ty::TyExt,
   mir::{
     adt_def::AdtDefExt, body::BodyExt, mutability::MutabilityExt, operand::OperandExt,
     place::PlaceExt,

@@ -2,16 +2,13 @@
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use rustc_borrowck::BodyWithBorrowckFacts;
+use rustc_borrowck::consumers::{BodyWithBorrowckFacts, ConsumerOptions};
 use rustc_data_structures::fx::FxHashSet as HashSet;
 use rustc_hir::def_id::LocalDefId;
 use rustc_middle::{
-  mir::{Body, MirPass, StatementKind, TerminatorKind},
-  ty::{
-    self,
-    query::{query_values::mir_borrowck, ExternProviders, Providers},
-    TyCtxt,
-  },
+  mir::{Body, BorrowCheckResult, MirPass, StatementKind, TerminatorKind},
+  query::{ExternProviders, Providers},
+  ty::TyCtxt,
 };
 
 use crate::{block_timer, cache::Cache, BodyExt};
@@ -80,7 +77,7 @@ thread_local! {
   static MIR_BODIES: Cache<LocalDefId, BodyWithBorrowckFacts<'static>> = Cache::default();
 }
 
-fn mir_borrowck(tcx: TyCtxt<'_>, def_id: LocalDefId) -> mir_borrowck<'_> {
+fn mir_borrowck(tcx: TyCtxt<'_>, def_id: LocalDefId) -> &BorrowCheckResult<'_> {
   block_timer!(&format!(
     "get_body_with_borrowck_facts for {}",
     tcx.def_path_debug_str(def_id.to_def_id())
@@ -88,7 +85,8 @@ fn mir_borrowck(tcx: TyCtxt<'_>, def_id: LocalDefId) -> mir_borrowck<'_> {
 
   let mut body_with_facts = rustc_borrowck::consumers::get_body_with_borrowck_facts(
     tcx,
-    ty::WithOptConstParam::unknown(def_id),
+    def_id,
+    ConsumerOptions::PoloniusInputFacts,
   );
 
   if SIMPLIFY_MIR.load(Ordering::SeqCst) {

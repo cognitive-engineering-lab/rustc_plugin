@@ -700,8 +700,8 @@ where
   });
 
   let Cow::Owned(mut html_diff) = html_diff else {
-        return raw_diff;
-    };
+    return raw_diff;
+  };
 
   if inside_font_tag {
     html_diff.push_str("</font>");
