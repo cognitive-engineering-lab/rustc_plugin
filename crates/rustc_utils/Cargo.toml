@@ -15,6 +15,8 @@ serde = ["dep:serde"]
 test = ["dep:textwrap"]
 graphviz = ["dep:regex"]
 ts-rs = ["dep:ts-rs"]
+indexical = ["dep:indexical"]
+default = ["indexical"]
 
 [dependencies]
 anyhow = "1"
@@ -25,6 +27,7 @@ serde = {version = "1", features = ["derive"], optional = true}
 textwrap = {version = "0.16", optional = true}
 regex = {version = "1", optional = true}
 ts-rs = {version = "6", optional = true}
+indexical = {version = "0.1", default-features = false, features = ["rustc"], optional = true}
 
 [dev-dependencies]
 rustc_utils = {path = ".", features = ["test"]}

@@ -11,15 +11,14 @@ use rustc_middle::{
 };
 use rustc_span::{source_map::Spanned, Span, SpanData};
 
-pub use self::{hir_span::EnclosingHirSpans, location_or_arg::LocationOrArg};
+pub use self::hir_span::EnclosingHirSpans;
 use self::{
   mir_span::{MirSpanCollector, MirSpannedPlace},
   span_tree::SpanTree,
 };
-use crate::{BodyExt, SpanDataExt, SpanExt};
+use crate::{mir::location_or_arg::LocationOrArg, BodyExt, SpanDataExt, SpanExt};
 
 mod hir_span;
-mod location_or_arg;
 mod mir_span;
 mod span_tree;
 

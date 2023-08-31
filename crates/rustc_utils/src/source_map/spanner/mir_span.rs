@@ -12,8 +12,8 @@ use rustc_middle::mir::{
 use rustc_span::SpanData;
 use smallvec::{smallvec, SmallVec};
 
-use super::{location_or_arg::LocationOrArg, Spanner};
-use crate::{BodyExt, PlaceExt, SpanExt};
+use super::Spanner;
+use crate::{mir::location_or_arg::LocationOrArg, BodyExt, PlaceExt, SpanExt};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MirSpannedPlace<'tcx> {
