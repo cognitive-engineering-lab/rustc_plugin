@@ -63,14 +63,14 @@ pub mod index {
   pub struct CustomMarker;
 
   impl ToIndex<LocationOrArg, CustomMarker> for Location {
-    fn to_index(&self, domain: &IndexedDomain<LocationOrArg>) -> LocationOrArgIndex {
-      LocationOrArg::Location(*self).to_index(domain)
+    fn to_index(self, domain: &IndexedDomain<LocationOrArg>) -> LocationOrArgIndex {
+      LocationOrArg::Location(self).to_index(domain)
     }
   }
 
   impl ToIndex<LocationOrArg, CustomMarker> for Local {
-    fn to_index(&self, domain: &IndexedDomain<LocationOrArg>) -> LocationOrArgIndex {
-      LocationOrArg::Arg(*self).to_index(domain)
+    fn to_index(self, domain: &IndexedDomain<LocationOrArg>) -> LocationOrArgIndex {
+      LocationOrArg::Arg(self).to_index(domain)
     }
   }
 
