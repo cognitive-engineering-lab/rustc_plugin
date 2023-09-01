@@ -30,15 +30,45 @@ impl CharByteMapping {
     let mut byte_to_char = HashMap::default();
     let mut char_to_byte = HashMap::default();
 
+    macro_rules! check_insert {
+      ($bpos:expr, $cpos:expr) => {
+        let _r = byte_to_char.insert($bpos, $cpos);
+        debug_assert!(
+          _r.is_none(),
+          "byte_to_char: bytepos={:?}, charpos={:?}",
+          $bpos,
+          $cpos
+        );
+        let _r = char_to_byte.insert($cpos, $bpos);
+        debug_assert!(
+          _r.is_none(),
+          "char_to_byte: bytepos={:?}, charpos={:?}",
+          $bpos,
+          $cpos
+        );
+      };
+    }
+
     for line in 0 .. file.count_lines() {
       let line_str = file.get_line(line).unwrap();
-      let line_start = file.line_bounds(line).start.0 as usize;
-      for (column, (byte_offset, _)) in line_str.char_indices().enumerate() {
+      let line_bounds = file.line_bounds(line);
+      let line_start = line_bounds.start.0 as usize;
+      let mut last_column = 0;
+      let mut last_offset = 0;
+      for (column, (byte_offset, c)) in line_str.char_indices().enumerate() {
         let bpos = BytePos(line_start + byte_offset);
         let cpos = CharPos { line, column };
-        byte_to_char.insert(bpos, cpos);
-        char_to_byte.insert(cpos, bpos);
+        check_insert!(bpos, cpos);
+        last_column = column + 1;
+        last_offset = byte_offset + c.len_utf8();
       }
+
+      let bpos = BytePos(line_start + last_offset);
+      let cpos = CharPos {
+        line,
+        column: last_column,
+      };
+      check_insert!(bpos, cpos);
     }
 
     CharByteMapping {
@@ -191,23 +221,22 @@ pub struct CharRange {
 impl ByteRange {
   pub fn as_char_range(&self, source_map: &SourceMap) -> CharRange {
     let file = self.filename.find_source_file(source_map).unwrap();
-    let get_char_pos = |rel_byte: BytePos| {
-      let bpos = file.start_pos + rustc_span::BytePos(rel_byte.0 as u32);
-      let (line, col) = file.lookup_file_pos(bpos);
-      CharPos {
-        line: line - 1,
-        column: col.0,
+
+    CONTEXT.with(|ctx| {
+      let ctx = ctx.borrow();
+      let mapping: &CharByteMapping = ctx
+        .char_byte_mapping
+        .get(self.filename, |_| CharByteMapping::build(&file));
+
+      let char_start = mapping.byte_to_char(self.start);
+      let char_end = mapping.byte_to_char(self.end);
+
+      CharRange {
+        start: char_start,
+        end: char_end,
+        filename: self.filename,
       }
-    };
-
-    let char_start = get_char_pos(self.start);
-    let char_end = get_char_pos(self.end);
-
-    CharRange {
-      start: char_start,
-      end: char_end,
-      filename: self.filename,
-    }
+    })
   }
 
   pub fn from_char_range(

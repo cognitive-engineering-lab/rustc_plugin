@@ -16,7 +16,7 @@ test = ["dep:textwrap"]
 graphviz = ["dep:regex"]
 ts-rs = ["dep:ts-rs"]
 indexical = ["dep:indexical"]
-default = ["indexical"]
+default = []
 
 [dependencies]
 anyhow = "1"
