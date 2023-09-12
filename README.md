@@ -52,7 +52,7 @@ Normally, Rust libraries have a [minimum supported Rust version][msrv] because t
 [Aquascope]: https://github.com/cognitive-engineering-lab/aquascope
 [Clippy]: https://github.com/rust-lang/rust-clippy
 [example]: https://github.com/cognitive-engineering-lab/rustc_plugin/tree/main/crates/rustc_plugin/examples/print-all-items
-[docs]: https://cognitive-engineering-lab.github.io/rustc_plugin/v0.7.0-nightly-2023-08-25/rustc_plugin/
-[docs-utils]: https://cognitive-engineering-lab.github.io/rustc_plugin/v0.7.0-nightly-2023-08-25/rustc_utils/
+[docs]: https://cognitive-engineering-lab.github.io/rustc_plugin/v0.7.1-nightly-2023-08-25/rustc_plugin/
+[docs-utils]: https://cognitive-engineering-lab.github.io/rustc_plugin/v0.7.1-nightly-2023-08-25/rustc_utils/
 [msrv]: https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field
 
