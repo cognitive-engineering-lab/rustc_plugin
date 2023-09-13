@@ -12,6 +12,26 @@ use crate::CrateFilter;
 pub const RUN_ON_ALL_CRATES: &str = "RUSTC_PLUGIN_ALL_TARGETS";
 pub const SPECIFIC_CRATE: &str = "SPECIFIC_CRATE";
 pub const SPECIFIC_TARGET: &str = "SPECIFIC_TARGET";
+pub const CARGO_ENCODED_RUSTFLAGS: &str = "CARGO_ENCODED_RUSTFLAGS";
+
+fn prior_rustflags() -> Result<Vec<String>, std::env::VarError> {
+  use std::env::{var, VarError};
+  var(CARGO_ENCODED_RUSTFLAGS)
+    .map(|flags| flags.split('\x1f').map(str::to_string).collect())
+    .or_else(|err| {
+      if matches!(err, VarError::NotPresent) {
+        var("RUSTFLAGS")
+          .map(|flags| flags.split_whitespace().map(str::to_string).collect())
+      } else {
+        Err(err)
+      }
+    })
+    .or_else(|err| {
+      matches!(err, VarError::NotPresent)
+        .then(Vec::new)
+        .ok_or(err)
+    })
+}
 
 /// The top-level function that should be called in your user-facing binary.
 pub fn cli_main<T: RustcPlugin>(plugin: T) {
@@ -60,12 +80,13 @@ pub fn cli_main<T: RustcPlugin>(plugin: T) {
     path.set_extension("exe");
   }
 
+  let mut prior_rustflags = prior_rustflags().unwrap();
+
+  prior_rustflags.push(format!("{}\x1f{exec_hash:x}", crate::EXEC_HASH_ARG));
+
   cmd
     .env("RUSTC_WRAPPER", path)
-    .env(
-      "CARGO_ENCODED_RUSTFLAGS",
-      format!("{}\x1f{exec_hash:x}", crate::EXEC_HASH_ARG),
-    )
+    .env(CARGO_ENCODED_RUSTFLAGS, prior_rustflags.join("\x1f"))
     .args(["check", "-vv", "--target-dir"])
     .arg(&target_dir);
 
@@ -213,4 +234,43 @@ fn only_run_on_file(
     kind,
     target.name
   );
+}
+
+#[cfg(test)]
+mod tests {
+  use std::ffi::OsStr;
+
+  use crate::cli::{prior_rustflags, CARGO_ENCODED_RUSTFLAGS};
+
+  fn with_var<K: AsRef<OsStr>, V: AsRef<OsStr>, R>(
+    k: K,
+    v: V,
+    f: impl FnOnce() -> R,
+  ) -> R {
+    let k_ref = k.as_ref();
+    std::env::set_var(k_ref, v);
+    let result = f();
+    // XXX does not restore any old values (because I'm lazy)
+    std::env::remove_var(k_ref);
+    result
+  }
+
+  #[test]
+  fn rustflags_test() {
+    with_var("RUSTFLAGS", "space double_space  tab  end", || {
+      assert_eq!(
+        prior_rustflags(),
+        Ok(vec![
+          "space".to_string(),
+          "double_space".to_string(),
+          "tab".to_string(),
+          "end".to_string()
+        ]),
+        "whitespace works"
+      );
+      with_var(CARGO_ENCODED_RUSTFLAGS, "override", || {
+        assert_eq!(prior_rustflags(), Ok(vec!["override".to_string()]))
+      })
+    });
+  }
 }
