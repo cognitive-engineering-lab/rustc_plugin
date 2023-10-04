@@ -6,10 +6,15 @@ on:
       - "**"
     tags-ignore:
       - "v*"
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: cargo clippy --all --all-features && cargo test --all --all-features -- --test-threads=1
+      - name: Lint
+        run: cargo clippy --all --all-features
+      - name: Tests
+        run: cargo test --all --all-features -- --test-threads=1
