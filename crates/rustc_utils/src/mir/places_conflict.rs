@@ -152,7 +152,7 @@ fn place_components_conflict<'tcx>(
   //                                     are disjoint
   //
   // Our invariant is, that at each step of the iteration:
-  //  - If we didn't run out of access to match, our borrow and access are comparable
+  //  - If we didn't run out of access to match, our borrow and access are comparalegal_flow
   //    and either equal or disjoint.
   //  - If we did run out of access, the borrow can access a part of it.
 
