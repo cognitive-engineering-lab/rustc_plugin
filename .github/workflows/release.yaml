@@ -7,19 +7,17 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - name: Install cargo-workspaces
         uses: baptiste0928/cargo-install@v2
         with:
           crate: cargo-workspaces
       - name: Run tests
-        run: cargo test --all --all-features -- --test-threads=1
-      - name: Generate transitive documentation
-        run: cargo doc --lib
-      - name: Generate workspace documentation
-        run:
+        run: cargo test --all-features -- --test-threads=1
+      - name: Generate documentation
+        run: |
           cargo doc --all-features
           RUSTDOCFLAGS="--html-in-header scripts/katex-header.html" cargo doc --lib --no-deps --all-features
       - name: Deploy documentation
@@ -28,6 +26,4 @@ jobs:
           folder: ./target/doc
           target-folder: ${{ github.ref_name }}
       - name: Publish crates
-        run: |
-          cargo login ${{ secrets.CRATES_IO_TOKEN }}
-          cargo ws publish --from-git --yes
+        run: cargo ws publish --from-git --yes --token ${{ secrets.CRATES_IO_TOKEN }}

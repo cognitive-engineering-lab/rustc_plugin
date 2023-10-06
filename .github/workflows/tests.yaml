@@ -15,6 +15,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Lint
-        run: cargo clippy --all --all-features
+        run: cargo clippy --all-features -- -D warnings
       - name: Tests
-        run: cargo test --all --all-features -- --test-threads=1
+        run: cargo test --all-features -- --test-threads=1
+      - name: Docs
+        run: RUSTDOCFLAGS="-D warnings" cargo doc --all-features --no-deps
