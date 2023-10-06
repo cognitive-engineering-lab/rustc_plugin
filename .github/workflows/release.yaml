@@ -19,7 +19,9 @@ jobs:
       - name: Generate transitive documentation
         run: cargo doc --lib
       - name: Generate workspace documentation
-        run: RUSTDOCFLAGS="--html-in-header scripts/katex-header.html" cargo doc --lib --no-deps
+        run:
+          cargo doc --all-features
+          RUSTDOCFLAGS="--html-in-header scripts/katex-header.html" cargo doc --lib --no-deps --all-features
       - name: Deploy documentation
         uses: JamesIves/github-pages-deploy-action@v4
         with:

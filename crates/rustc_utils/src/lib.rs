@@ -19,7 +19,8 @@
   box_patterns,          // for ergonomics
   let_chains,            // for places_conflict module
   exact_size_is_empty,   // for graphviz module
-  impl_trait_in_assoc_type
+  impl_trait_in_assoc_type,
+  doc_auto_cfg,          // for feature gates in documentation
 )]
 #![allow(clippy::len_zero, clippy::len_without_is_empty)]
 
