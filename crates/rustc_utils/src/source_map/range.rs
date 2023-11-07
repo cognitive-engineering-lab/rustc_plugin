@@ -286,8 +286,8 @@ impl ByteRange {
         .as_ref()
         .unwrap_or_else(|| external.get_source().as_ref().unwrap());
 
-      let byte_start = BytePos(source_map.lookup_byte_offset(span.lo()).pos.0 as usize);
-      let byte_end = BytePos(source_map.lookup_byte_offset(span.hi()).pos.0 as usize);
+      let byte_start = BytePos(span.lo().0 as usize);
+      let byte_end = BytePos(span.hi().0 as usize);
 
       Ok(ByteRange {
         start: byte_start,
