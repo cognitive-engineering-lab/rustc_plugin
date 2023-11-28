@@ -8,11 +8,7 @@
 
 use std::fmt;
 
-use rustc_data_structures::graph::{
-  dominators::{Dominators, Iter as DominatorsIter},
-  vec_graph::VecGraph,
-  *,
-};
+use rustc_data_structures::graph::{dominators::Dominators, vec_graph::VecGraph, *};
 use rustc_index::{
   bit_set::{BitSet, HybridBitSet, SparseBitMatrix},
   Idx,
@@ -101,12 +97,6 @@ impl<Node: Idx> PostDominators<Node> {
   /// Gets the node that immediately post-dominators `node`, if one exists.
   pub fn immediate_post_dominator(&self, node: Node) -> Option<Node> {
     self.0.immediate_dominator(node)
-  }
-
-  /// Gets all nodes that post-dominate `node`, if they exist.
-  pub fn post_dominators(&self, node: Node) -> Option<DominatorsIter<'_, Node>> {
-    let reachable = self.0.is_reachable(node);
-    reachable.then(|| self.0.dominators(node))
   }
 }
 

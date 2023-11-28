@@ -7,8 +7,8 @@ use rustc_data_structures::fx::FxHashSet as HashSet;
 use rustc_hir::def_id::LocalDefId;
 use rustc_middle::{
   mir::{Body, BorrowCheckResult, MirPass, StatementKind, TerminatorKind},
-  query::{ExternProviders, Providers},
   ty::TyCtxt,
+  util::Providers,
 };
 
 use crate::{block_timer, cache::Cache, BodyExt};
@@ -38,12 +38,16 @@ impl<'tcx> MirPass<'tcx> for SimplifyMir {
 
       let terminator = block.terminator_mut();
       terminator.kind = match terminator.kind {
-        TerminatorKind::FalseEdge { real_target, .. } => TerminatorKind::Goto {
-          target: real_target,
-        },
-        TerminatorKind::FalseUnwind { real_target, .. } => TerminatorKind::Goto {
-          target: real_target,
-        },
+        TerminatorKind::FalseEdge { real_target, .. } => {
+          TerminatorKind::Goto {
+            target: real_target,
+          }
+        }
+        TerminatorKind::FalseUnwind { real_target, .. } => {
+          TerminatorKind::Goto {
+            target: real_target,
+          }
+        }
         // Ensures that control dependencies can determine the independence of differnet
         // return paths
         TerminatorKind::Goto { target } if return_blocks.contains(&target) => {
@@ -65,12 +69,8 @@ pub fn enable_mir_simplification() {
 ///
 /// For why we need to do override mir_borrowck, see:
 /// <https://github.com/rust-lang/rust/blob/485ced56b8753ec86936903f2a8c95e9be8996a1/src/test/run-make-fulldeps/obtain-borrowck/driver.rs>
-pub fn override_queries(
-  _session: &rustc_session::Session,
-  local: &mut Providers,
-  _external: &mut ExternProviders,
-) {
-  local.mir_borrowck = mir_borrowck;
+pub fn override_queries(_session: &rustc_session::Session, providers: &mut Providers) {
+  providers.mir_borrowck = mir_borrowck;
 }
 
 thread_local! {
@@ -83,11 +83,12 @@ fn mir_borrowck(tcx: TyCtxt<'_>, def_id: LocalDefId) -> &BorrowCheckResult<'_> {
     tcx.def_path_debug_str(def_id.to_def_id())
   ));
 
-  let mut body_with_facts = rustc_borrowck::consumers::get_body_with_borrowck_facts(
-    tcx,
-    def_id,
-    ConsumerOptions::PoloniusInputFacts,
-  );
+  let mut body_with_facts =
+    rustc_borrowck::consumers::get_body_with_borrowck_facts(
+      tcx,
+      def_id,
+      ConsumerOptions::PoloniusInputFacts,
+    );
 
   if SIMPLIFY_MIR.load(Ordering::SeqCst) {
     SimplifyMir.run_pass(tcx, &mut body_with_facts.body);

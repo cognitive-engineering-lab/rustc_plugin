@@ -1,5 +1,6 @@
 //! Running rustc and Flowistry in tests.
 
+use std::sync::Arc;
 use std::{
   fmt::Debug, fs, hash::Hash, io, panic, path::Path, process::Command, sync::LazyLock,
 };
@@ -36,8 +37,8 @@ impl FileLoader for StringLoader {
     Ok(self.0.clone())
   }
 
-  fn read_binary_file(&self, path: &Path) -> io::Result<Vec<u8>> {
-    fs::read(path)
+  fn read_binary_file(&self, path: &Path) -> io::Result<Arc<[u8]>> {
+    fs::read(path).map(|data| data.into())
   }
 }
 

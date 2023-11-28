@@ -92,9 +92,11 @@ pub fn borrow_conflicts_with_place<'tcx>(
 ) -> bool {
   // This Local/Local case is handled by the more general code below, but
   // it's so common that it's a speed win to check for it first.
-  if let Some(l1) = borrow_place.as_local() && let Some(l2) = access_place.as_local() {
-        return l1 == l2;
-    }
+  if let Some(l1) = borrow_place.as_local()
+    && let Some(l2) = access_place.as_local()
+  {
+    return l1 == l2;
+  }
 
   place_components_conflict(
     tcx,
@@ -301,7 +303,8 @@ fn place_components_conflict<'tcx>(
         | (ProjectionElem::ConstantIndex { .. }, _, _)
         | (ProjectionElem::Subslice { .. }, _, _)
         | (ProjectionElem::OpaqueCast { .. }, _, _)
-        | (ProjectionElem::Downcast { .. }, _, _) => {
+        | (ProjectionElem::Downcast { .. }, _, _)
+        | (ProjectionElem::Subtype { .. }, _, _) => {
           // Recursive case. This can still be disjoint on a
           // further iteration if this a shallow access and
           // there's a deref later on, e.g., a borrow
@@ -324,7 +327,7 @@ fn place_components_conflict<'tcx>(
   // If the second example, where we did, then we still know
   // that the borrow can access a *part* of our place that
   // our access cares about, so we still have a conflict.
-  if borrow_kind == BorrowKind::Shallow
+  if borrow_kind == BorrowKind::Fake
     && borrow_place.projection.len() < access_place.projection.len()
   {
     // debug!("borrow_conflicts_with_place: shallow borrow");
@@ -368,7 +371,8 @@ fn place_projection_conflict<'tcx>(
       // debug!("place_element_conflict: DISJOINT-OR-EQ-DEREF");
       Overlap::EqualOrDisjoint
     }
-    (ProjectionElem::OpaqueCast(v1), ProjectionElem::OpaqueCast(v2)) => {
+    (ProjectionElem::OpaqueCast(v1), ProjectionElem::OpaqueCast(v2))
+    | (ProjectionElem::Subtype(v1), ProjectionElem::Subtype(v2)) => {
       if v1 == v2 {
         // same type - recur.
         // debug!("place_element_conflict: DISJOINT-OR-EQ-OPAQUE");
@@ -650,7 +654,8 @@ fn place_projection_conflict<'tcx>(
       | ProjectionElem::ConstantIndex { .. }
       | ProjectionElem::OpaqueCast { .. }
       | ProjectionElem::Subslice { .. }
-      | ProjectionElem::Downcast(..),
+      | ProjectionElem::Downcast(..)
+      | ProjectionElem::Subtype(..),
       _,
     ) => bug!(
       "mismatched projections in place_element_conflict: {:?} and {:?}",

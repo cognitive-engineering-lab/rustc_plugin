@@ -9,7 +9,7 @@ use std::{
 use anyhow::{ensure, Result};
 use cfg_if::cfg_if;
 use rustc_data_structures::{captures::Captures, fx::FxHashMap as HashMap};
-use rustc_hir::{def_id::DefId, GeneratorKind, HirId};
+use rustc_hir::{def_id::DefId, CoroutineKind, HirId};
 use rustc_middle::{
   mir::{pretty::write_mir_fn, *},
   ty::{Region, Ty, TyCtxt},
@@ -170,7 +170,7 @@ impl<'tcx> BodyExt<'tcx> for Body<'tcx> {
   }
 
   fn async_context(&self, tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<Ty<'tcx>> {
-    if matches!(tcx.generator_kind(def_id), Some(GeneratorKind::Async(..))) {
+    if matches!(tcx.coroutine_kind(def_id), Some(CoroutineKind::Async(..))) {
       Some(self.local_decls[Local::from_usize(2)].ty)
     } else {
       None

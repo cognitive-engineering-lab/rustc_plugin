@@ -526,7 +526,7 @@ impl<'tcx> TypeVisitor<TyCtxt<'tcx>> for CollectRegions<'tcx> {
         StoppingCondition::BeforeRefs => {}
       },
 
-      TyKind::Closure(_, substs) | TyKind::Generator(_, substs, _) => {
+      TyKind::Closure(_, substs) | TyKind::Coroutine(_, substs, _) => {
         self.visit_ty(substs.as_closure().tupled_upvars_ty());
       }
 
@@ -595,7 +595,7 @@ impl<'tcx> TypeVisitor<TyCtxt<'tcx>> for CollectRegions<'tcx> {
     let region = match region.kind() {
       RegionKind::ReVar(region) => region,
       RegionKind::ReStatic => RegionVid::from_usize(0),
-      RegionKind::ReErased | RegionKind::ReLateBound(_, _) => {
+      RegionKind::ReErased | RegionKind::ReLateParam(_) => {
         return ControlFlow::Continue(());
       }
       _ => unreachable!("{:?}: {:?}", self.ty_stack.first().unwrap(), region),
@@ -674,7 +674,7 @@ struct Point { x: usize, y: usize }
 fn main() {
   let x = (0, 0);
   let y = Some(1);
-  let z = &[Some((0, 1))];    
+  let z = &[Some((0, 1))];
   let w = (&y,);
   let p = &Point { x: 0, y: 0 };
 }
