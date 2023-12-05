@@ -69,7 +69,7 @@ thread_local! {
 pub fn compile_body_with_range(
   input: impl Into<String>,
   compute_target: impl FnOnce() -> ByteRange + Send,
-  callback: impl for<'tcx> FnOnce(TyCtxt<'tcx>, BodyId, &BodyWithBorrowckFacts<'tcx>, ByteRange)
+  callback: impl for<'tcx> FnOnce(TyCtxt<'tcx>, BodyId, &'tcx BodyWithBorrowckFacts<'tcx>, ByteRange)
     + Send,
 ) {
   compile(input, |tcx| {
@@ -87,7 +87,8 @@ pub fn compile_body_with_range(
 
 pub fn compile_body(
   input: impl Into<String>,
-  callback: impl for<'tcx> FnOnce(TyCtxt<'tcx>, BodyId, &BodyWithBorrowckFacts<'tcx>) + Send,
+  callback: impl for<'tcx> FnOnce(TyCtxt<'tcx>, BodyId, &'tcx BodyWithBorrowckFacts<'tcx>)
+    + Send,
 ) {
   compile(input, |tcx| {
     let hir = tcx.hir();
