@@ -77,7 +77,6 @@ impl rustc_driver::Callbacks for PrintAllItemsCallbacks {
   // all the type-checking has completed.
   fn after_analysis<'tcx>(
     &mut self,
-    _handler: &rustc_session::EarlyErrorHandler,
     _compiler: &rustc_interface::interface::Compiler,
     queries: &'tcx rustc_interface::Queries<'tcx>,
   ) -> rustc_driver::Compilation {

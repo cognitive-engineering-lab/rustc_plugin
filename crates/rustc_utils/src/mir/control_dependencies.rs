@@ -8,11 +8,7 @@
 
 use std::fmt;
 
-use rustc_data_structures::graph::{
-  dominators::{Dominators, Iter as DominatorsIter},
-  vec_graph::VecGraph,
-  *,
-};
+use rustc_data_structures::graph::{dominators::Dominators, vec_graph::VecGraph, *};
 use rustc_index::{
   bit_set::{BitSet, HybridBitSet, SparseBitMatrix},
   Idx,
@@ -77,15 +73,19 @@ impl<G: ControlFlowGraph> WithPredecessors for ReversedGraph<'_, G> {
 }
 
 /// Represents the post-dominators of a graph's nodes with respect to a particular exit.
-pub struct PostDominators<Node: Idx>(Dominators<Node>);
+pub struct PostDominators<Node: Idx> {
+  dominators: Dominators<Node>,
+  num_nodes: usize,
+}
 
 impl<Node: Idx> PostDominators<Node> {
   /// Constructs the post-dominators by computing the dominators on a reversed graph.
   pub fn build<G: ControlFlowGraph<Node = Node>>(graph: &G, exit: Node) -> Self {
+    let num_nodes = graph.num_nodes();
     let mut reversed = ReversedGraph {
       graph,
       exit,
-      unreachable: BitSet::new_empty(graph.num_nodes()),
+      unreachable: BitSet::new_empty(num_nodes),
     };
 
     let reachable = iterate::post_order_from(&reversed, exit);
@@ -95,18 +95,25 @@ impl<Node: Idx> PostDominators<Node> {
     }
 
     let dominators = dominators::dominators(&reversed);
-    PostDominators::<Node>(dominators)
+    PostDominators {
+      dominators,
+      num_nodes,
+    }
   }
 
   /// Gets the node that immediately post-dominators `node`, if one exists.
   pub fn immediate_post_dominator(&self, node: Node) -> Option<Node> {
-    self.0.immediate_dominator(node)
+    self.dominators.immediate_dominator(node)
   }
 
   /// Gets all nodes that post-dominate `node`, if they exist.
-  pub fn post_dominators(&self, node: Node) -> Option<DominatorsIter<'_, Node>> {
-    let reachable = self.0.is_reachable(node);
-    reachable.then(|| self.0.dominators(node))
+  pub fn post_dominators(&self, node: Node) -> Option<impl Iterator<Item = Node> + '_> {
+    let reachable = self.dominators.is_reachable(node);
+    reachable.then(move || {
+      (0 .. self.num_nodes)
+        .map(Node::new)
+        .filter(move |other| self.dominators.dominates(*other, node))
+    })
   }
 }
 

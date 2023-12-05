@@ -8,6 +8,3 @@ pub mod location_or_arg;
 pub mod mutability;
 pub mod operand;
 pub mod place;
-
-#[allow(clippy::all, clippy::pedantic)]
-pub mod places_conflict;

@@ -184,7 +184,7 @@ mod test {
 
   #[test]
   fn test_span_subtract() {
-    rustc_span::create_default_session_if_not_set_then(|_| {
+    rustc_span::create_default_session_globals_then(|| {
       let mk = |lo, hi| Span::with_root_ctxt(BytePos(lo), BytePos(hi));
       let outer = mk(1, 10);
       let inner: Vec<Span> = vec![mk(0, 2), mk(3, 4), mk(3, 5), mk(7, 8), mk(9, 13)];

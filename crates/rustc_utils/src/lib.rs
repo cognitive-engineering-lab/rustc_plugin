@@ -34,7 +34,6 @@ extern crate rustc_index;
 extern crate rustc_infer;
 extern crate rustc_interface;
 extern crate rustc_macros;
-#[macro_use]
 extern crate rustc_middle;
 extern crate rustc_mir_dataflow;
 extern crate rustc_mir_transform;
