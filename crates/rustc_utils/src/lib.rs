@@ -28,6 +28,7 @@ extern crate either;
 extern crate rustc_borrowck;
 extern crate rustc_data_structures;
 extern crate rustc_driver;
+extern crate rustc_errors;
 extern crate rustc_graphviz;
 extern crate rustc_hir;
 extern crate rustc_index;
@@ -47,6 +48,7 @@ extern crate rustc_type_ir;
 extern crate smallvec;
 
 pub mod cache;
+pub mod errors;
 pub mod hir;
 pub mod mir;
 pub mod source_map;
