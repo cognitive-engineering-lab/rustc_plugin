@@ -1,7 +1,6 @@
 //! Silent diagnostics emitter.
 //!
-//! See:
-//! https://doc.rust-lang.org/nightly/nightly-rustc/rustfmt_nightly/parse/session/struct.SilentEmitter.html#impl-Translate-for-SilentEmitter
+//! See: <https://doc.rust-lang.org/nightly/nightly-rustc/rustfmt_nightly/parse/session/struct.SilentEmitter.html#impl-Translate-for-SilentEmitter>
 
 use rustc_data_structures::sync::Lrc;
 use rustc_errors::{emitter::Emitter, translation::Translate, Diagnostic};
