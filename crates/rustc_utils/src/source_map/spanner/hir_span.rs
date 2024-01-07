@@ -88,7 +88,7 @@ impl<'tcx> Spanner<'tcx> {
   pub fn hir_spans(&self, id: HirId, mode: EnclosingHirSpans) -> Option<Vec<Span>> {
     let hir = self.tcx.hir();
     let span = try_span!(self, hir.span(id));
-    let inner_spans = match hir.get(id) {
+    let inner_spans = match self.tcx.hir_node(id) {
       Node::Expr(expr) => match expr.kind {
         ExprKind::Loop(_, _, loop_source, header) => match loop_source {
           LoopSource::ForLoop | LoopSource::While => {
