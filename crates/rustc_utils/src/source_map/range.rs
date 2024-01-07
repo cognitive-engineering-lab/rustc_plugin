@@ -276,7 +276,7 @@ impl ByteRange {
       };
 
       ensure!(
-        source_map.ensure_source_file_source_present(file.clone()),
+        source_map.ensure_source_file_source_present(&file),
         "Could not load source for file: {:?}",
         file.name
       );

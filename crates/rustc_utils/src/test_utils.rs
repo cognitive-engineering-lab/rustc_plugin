@@ -7,7 +7,10 @@ use std::{
 use anyhow::{anyhow, ensure, Context, Result};
 use log::debug;
 use rustc_borrowck::consumers::BodyWithBorrowckFacts;
-use rustc_data_structures::fx::{FxHashMap as HashMap, FxHashSet as HashSet};
+use rustc_data_structures::{
+  fx::{FxHashMap as HashMap, FxHashSet as HashSet},
+  sync::Lrc,
+};
 use rustc_hir::{BodyId, ItemKind};
 use rustc_middle::{
   mir::{Body, HasLocalDecls, Local, Place},
@@ -36,8 +39,8 @@ impl FileLoader for StringLoader {
     Ok(self.0.clone())
   }
 
-  fn read_binary_file(&self, path: &Path) -> io::Result<Vec<u8>> {
-    fs::read(path)
+  fn read_binary_file(&self, path: &Path) -> io::Result<Lrc<[u8]>> {
+    Ok(fs::read(path)?.into())
   }
 }
 

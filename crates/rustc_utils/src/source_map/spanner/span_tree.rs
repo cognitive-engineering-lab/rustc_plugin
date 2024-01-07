@@ -45,7 +45,7 @@ mod test {
 
   #[test]
   fn span_tree_test() {
-    rustc_span::create_default_session_if_not_set_then(|_| {
+    rustc_span::create_default_session_globals_then(|| {
       let mk_span = |lo, hi| SpanData {
         lo: BytePos(lo),
         hi: BytePos(hi),

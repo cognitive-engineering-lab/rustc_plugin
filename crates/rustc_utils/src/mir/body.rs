@@ -7,14 +7,12 @@ use std::{
 };
 
 use anyhow::{ensure, Result};
-use cfg_if::cfg_if;
 use rustc_data_structures::{captures::Captures, fx::FxHashMap as HashMap};
-use rustc_hir::{def_id::DefId, GeneratorKind, HirId};
+use rustc_hir::{def_id::DefId, CoroutineDesugaring, CoroutineKind, HirId};
 use rustc_middle::{
   mir::{pretty::write_mir_fn, *},
   ty::{Region, Ty, TyCtxt},
 };
-use rustc_mir_dataflow::{fmt::DebugWithContext, Analysis, Results};
 use smallvec::SmallVec;
 
 use super::control_dependencies::ControlDependencies;
@@ -83,18 +81,6 @@ pub trait BodyExt<'tcx> {
 
   /// Returns an iterator over all the regions that appear in the body's return type.
   fn regions_in_return(&self) -> Self::ReturnRegionsIter;
-
-  /// Visualizes analysis results using graphviz/dot and writes them to
-  /// a file in the `target/` directory named `<function name>.pdf`.
-  fn write_analysis_results<A>(
-    &self,
-    results: &mut Results<'tcx, A>,
-    def_id: DefId,
-    tcx: TyCtxt<'tcx>,
-  ) -> Result<()>
-  where
-    A: Analysis<'tcx>,
-    A::Domain: DebugWithContext<A>;
 }
 
 impl<'tcx> BodyExt<'tcx> for Body<'tcx> {
@@ -170,7 +156,10 @@ impl<'tcx> BodyExt<'tcx> for Body<'tcx> {
   }
 
   fn async_context(&self, tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<Ty<'tcx>> {
-    if matches!(tcx.generator_kind(def_id), Some(GeneratorKind::Async(..))) {
+    if matches!(
+      tcx.coroutine_kind(def_id),
+      Some(CoroutineKind::Desugared(CoroutineDesugaring::Async, _))
+    ) {
       Some(self.local_decls[Local::from_usize(2)].ty)
     } else {
       None
@@ -203,38 +192,6 @@ impl<'tcx> BodyExt<'tcx> for Body<'tcx> {
     self.local_decls.indices().flat_map(move |local| {
       Place::from_local(local, tcx).interior_paths(tcx, self, def_id)
     })
-  }
-
-  #[allow(unused)]
-  fn write_analysis_results<A>(
-    &self,
-    results: &mut Results<'tcx, A>,
-    def_id: DefId,
-    tcx: TyCtxt<'tcx>,
-  ) -> Result<()>
-  where
-    A: Analysis<'tcx>,
-    A::Domain: DebugWithContext<A>,
-  {
-    cfg_if! {
-      if #[cfg(feature = "graphviz")] {
-        use rustc_graphviz as dot;
-        use rustc_mir_dataflow::graphviz;
-
-        let graphviz =
-          graphviz::Formatter::new(self, results, graphviz::OutputStyle::AfterOnly);
-        let mut buf = Vec::new();
-        dot::render(&graphviz, &mut buf)?;
-
-        let output_dir = Path::new("target");
-        let fname = tcx.def_path_debug_str(def_id);
-        let output_path = output_dir.join(format!("{fname}.pdf"));
-
-        run_dot(&output_path, buf)
-      } else {
-        anyhow::bail!("graphviz feature is not enabled")
-      }
-    }
   }
 }
 

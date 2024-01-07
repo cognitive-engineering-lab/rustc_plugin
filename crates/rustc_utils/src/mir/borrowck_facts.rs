@@ -7,8 +7,8 @@ use rustc_data_structures::fx::FxHashSet as HashSet;
 use rustc_hir::def_id::LocalDefId;
 use rustc_middle::{
   mir::{Body, BorrowCheckResult, MirPass, StatementKind, TerminatorKind},
-  query::{ExternProviders, Providers},
   ty::TyCtxt,
+  util::Providers,
 };
 
 use crate::{block_timer, cache::Cache, BodyExt};
@@ -65,11 +65,7 @@ pub fn enable_mir_simplification() {
 ///
 /// For why we need to do override mir_borrowck, see:
 /// <https://github.com/rust-lang/rust/blob/485ced56b8753ec86936903f2a8c95e9be8996a1/src/test/run-make-fulldeps/obtain-borrowck/driver.rs>
-pub fn override_queries(
-  _session: &rustc_session::Session,
-  local: &mut Providers,
-  _external: &mut ExternProviders,
-) {
+pub fn override_queries(_session: &rustc_session::Session, local: &mut Providers) {
   local.mir_borrowck = mir_borrowck;
 }
 
