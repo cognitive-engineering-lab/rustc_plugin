@@ -401,12 +401,11 @@ impl<'tcx> PlaceExt<'tcx> for Place<'tcx> {
     Place::make(place.local, &projection, tcx)
   }
 
-  fn is_source_visible(&self, tcx: TyCtxt, body: &Body) -> bool {
+  fn is_source_visible(&self, _tcx: TyCtxt, body: &Body) -> bool {
     let local = self.local;
     let local_info = &body.local_decls[local];
     let is_loc = local_info.is_user_variable();
     let from_desugaring = local_info.from_compiler_desugaring();
-    let source_info = local_info.source_info;
     let from_expansion = local_info.source_info.span.from_expansion();
 
     // The assumption is that decls whose source_scope should be collapsed

@@ -47,7 +47,6 @@ extern crate rustc_type_ir;
 extern crate smallvec;
 
 pub mod cache;
-pub mod errors;
 pub mod hir;
 pub mod mir;
 pub mod source_map;
