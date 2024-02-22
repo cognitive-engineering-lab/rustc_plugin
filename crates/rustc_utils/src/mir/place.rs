@@ -407,13 +407,13 @@ impl<'tcx> PlaceExt<'tcx> for Place<'tcx> {
     let is_loc = local_info.is_user_variable();
     let from_desugaring = local_info.from_compiler_desugaring();
     let source_info = local_info.source_info;
+    let from_expansion = local_info.source_info.span.from_expansion();
 
     // The assumption is that decls whose source_scope should be collapsed
     // (i.e. with that of the outermost expansion site) are coming from a
     // HIR -> MIR expansion OR are being expanded from some macro not
     // actually visible in the source scope.
-    let should_collapse = tcx.should_collapse_debuginfo(source_info.span);
-    is_loc && !should_collapse && !from_desugaring
+    is_loc && !from_desugaring && !from_expansion
   }
 }
 
