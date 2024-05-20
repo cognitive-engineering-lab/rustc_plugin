@@ -23,27 +23,20 @@ struct ReversedGraph<'a, G: ControlFlowGraph> {
 
 impl<G: ControlFlowGraph> DirectedGraph for ReversedGraph<'_, G> {
   type Node = G::Node;
-}
 
-impl<G: ControlFlowGraph> WithStartNode for ReversedGraph<'_, G> {
-  fn start_node(&self) -> Self::Node {
-    self.exit
-  }
-}
-
-impl<G: ControlFlowGraph> WithNumNodes for ReversedGraph<'_, G> {
   fn num_nodes(&self) -> usize {
     self.graph.num_nodes()
   }
 }
 
-impl<'graph, G: ControlFlowGraph> GraphSuccessors<'graph> for ReversedGraph<'_, G> {
-  type Item = G::Node;
-  type Iter = smallvec::IntoIter<[Self::Item; 4]>;
+impl<G: ControlFlowGraph> StartNode for ReversedGraph<'_, G> {
+  fn start_node(&self) -> Self::Node {
+    self.exit
+  }
 }
 
-impl<G: ControlFlowGraph> WithSuccessors for ReversedGraph<'_, G> {
-  fn successors(&self, node: Self::Node) -> <Self as GraphSuccessors<'_>>::Iter {
+impl<G: ControlFlowGraph> Successors for ReversedGraph<'_, G> {
+  fn successors(&self, node: Self::Node) -> impl Iterator<Item = Self::Node> {
     self
       .graph
       .predecessors(node)
@@ -56,13 +49,8 @@ impl<G: ControlFlowGraph> WithSuccessors for ReversedGraph<'_, G> {
   }
 }
 
-impl<'graph, G: ControlFlowGraph> GraphPredecessors<'graph> for ReversedGraph<'_, G> {
-  type Item = G::Node;
-  type Iter = smallvec::IntoIter<[Self::Item; 4]>;
-}
-
-impl<G: ControlFlowGraph> WithPredecessors for ReversedGraph<'_, G> {
-  fn predecessors(&self, node: Self::Node) -> <Self as GraphPredecessors<'_>>::Iter {
+impl<G: ControlFlowGraph> Predecessors for ReversedGraph<'_, G> {
+  fn predecessors(&self, node: Self::Node) -> impl Iterator<Item = Self::Node> {
     self
       .graph
       .successors(node)
@@ -159,7 +147,8 @@ impl<Node: Idx + Ord> ControlDependencies<Node> {
         Some((idom(node)?, node))
       })
       .collect::<Vec<_>>();
-    let dominator_tree = VecGraph::new(n, edges);
+
+    let dominator_tree: VecGraph<Node, true> = VecGraph::new(n, edges);
 
     let traversal = iterate::post_order_from(&dominator_tree, exit);
 
