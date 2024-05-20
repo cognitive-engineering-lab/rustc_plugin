@@ -14,10 +14,7 @@ use rustc_middle::{
     VarDebugInfoContents, RETURN_PLACE,
   },
   traits::ObligationCause,
-  ty::{
-    self, AdtKind, Region, RegionKind, RegionVid, Ty, TyCtxt, TyKind, TypeAndMut,
-    TypeVisitor,
-  },
+  ty::{self, AdtKind, Region, RegionKind, RegionVid, Ty, TyCtxt, TyKind, TypeVisitor},
 };
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use rustc_trait_selection::traits::NormalizeExt;
@@ -439,7 +436,9 @@ struct CollectRegions<'tcx> {
 pub const UNKNOWN_REGION: RegionVid = RegionVid::MAX;
 
 impl<'tcx> TypeVisitor<TyCtxt<'tcx>> for CollectRegions<'tcx> {
-  fn visit_ty(&mut self, ty: Ty<'tcx>) -> ControlFlow<Self::BreakTy> {
+  type Result = ControlFlow<()>;
+
+  fn visit_ty(&mut self, ty: Ty<'tcx>) -> Self::Result {
     let tcx = self.tcx;
     if self.ty_stack.iter().any(|visited_ty| ty == *visited_ty) {
       return ControlFlow::Continue(());
@@ -529,7 +528,7 @@ impl<'tcx> TypeVisitor<TyCtxt<'tcx>> for CollectRegions<'tcx> {
         self.visit_ty(substs.as_closure().tupled_upvars_ty());
       }
 
-      TyKind::RawPtr(TypeAndMut { ty, .. }) => {
+      TyKind::RawPtr(ty, _) => {
         self.visit_region(Region::new_var(tcx, UNKNOWN_REGION));
         self.place_stack.push(ProjectionElem::Deref);
         self.visit_ty(*ty);
@@ -589,7 +588,7 @@ impl<'tcx> TypeVisitor<TyCtxt<'tcx>> for CollectRegions<'tcx> {
     ControlFlow::Continue(())
   }
 
-  fn visit_region(&mut self, region: ty::Region<'tcx>) -> ControlFlow<Self::BreakTy> {
+  fn visit_region(&mut self, region: ty::Region<'tcx>) -> Self::Result {
     trace!("visiting region {region:?}");
     let region = match region.kind() {
       RegionKind::ReVar(region) => region,
