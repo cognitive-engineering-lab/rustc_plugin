@@ -44,6 +44,7 @@ The `rustc_plugin` framework is responsible for marshalling arguments from the t
 
 Normally, Rust libraries have a [minimum supported Rust version][msrv] because they promise to not use any breaking features implemented after that version. Rust compiler plugins are the opposite &mdash; they have a **maximum** supported Rust version (MaxSRV). A compiler plugin cannot analyze programs that use features implemented after the release date of the plugin's toolchain. The MaxSRV for every version of `rustc_plugin` is listed below:
 
+* v0.10 (`nightly-2024-05-20`) - rustc 1.79
 * v0.9 (`nightly-2024-01-24`) - rustc 1.76
 * v0.8 (`nightly-2024-01-06`) - rustc 1.76
 * v0.7 (`nightly-2023-08-25`) - rustc 1.73
@@ -54,7 +55,7 @@ Normally, Rust libraries have a [minimum supported Rust version][msrv] because t
 [Aquascope]: https://github.com/cognitive-engineering-lab/aquascope
 [Clippy]: https://github.com/rust-lang/rust-clippy
 [example]: https://github.com/cognitive-engineering-lab/rustc_plugin/tree/main/crates/rustc_plugin/examples/print-all-items
-[docs]: https://cognitive-engineering-lab.github.io/rustc_plugin/v0.9.0-nightly-2024-01-24/rustc_plugin/
-[docs-utils]: https://cognitive-engineering-lab.github.io/rustc_plugin/v0.9.0-nightly-2024-01-24/rustc_utils/
+[docs]: https://cognitive-engineering-lab.github.io/rustc_plugin/v0.10.0-nightly-2024-05-20/rustc_plugin/
+[docs-utils]: https://cognitive-engineering-lab.github.io/rustc_plugin/v0.10.0-nightly-2024-05-20/rustc_utils/
 [msrv]: https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field
 
