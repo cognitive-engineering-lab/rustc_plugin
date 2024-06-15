@@ -92,11 +92,13 @@ pub trait PlaceExt<'tcx> {
   /// Returns true if `self` is a projection of an argument local.
   fn is_arg(&self, body: &Body<'tcx>) -> bool;
 
-  /// Returns true if `self` could not be resolved further to another place.
+  /// Returns true if `self` cannot be resolved further to another place.
   ///
-  /// This is true of places with no dereferences in the projection, or of dereferences
-  /// of arguments.
-  fn is_direct(&self, body: &Body<'tcx>) -> bool;
+  /// This is true if one of the following is true:
+  /// - `self` contains no dereference (`*`) projections
+  /// - `self` is the dereference of (a projection of) an argument to `body`
+  /// - all dereferences in `self` are dereferences of a `Box`
+  fn is_direct(&self, body: &Body<'tcx>, tcx: TyCtxt<'tcx>) -> bool;
 
   type RefsInProjectionIter<'a>: Iterator<
     Item = (PlaceRef<'tcx>, &'tcx [PlaceElem<'tcx>]),
@@ -106,7 +108,11 @@ pub trait PlaceExt<'tcx> {
 
   /// Returns an iterator over all prefixes of `self`'s projection that are references,
   ///  along with the suffix of the remaining projection.
-  fn refs_in_projection(&self) -> Self::RefsInProjectionIter<'_>;
+  fn refs_in_projection(
+    &self,
+    body: &Body<'tcx>,
+    tcx: TyCtxt<'tcx>,
+  ) -> Self::RefsInProjectionIter<'_>;
 
   /// Returns all possible projections of `self` that are references.
   ///
@@ -172,24 +178,38 @@ impl<'tcx> PlaceExt<'tcx> for Place<'tcx> {
     i > 0 && i - 1 < body.arg_count
   }
 
-  fn is_direct(&self, body: &Body<'tcx>) -> bool {
-    !self.is_indirect() || self.is_arg(body)
+  fn is_direct(&self, body: &Body<'tcx>, tcx: TyCtxt<'tcx>) -> bool {
+    !self.is_indirect()
+      || self.is_arg(body)
+      || self.refs_in_projection(body, tcx).next().is_none()
   }
 
   type RefsInProjectionIter<'a> = impl Iterator<Item = (PlaceRef<'tcx>, &'tcx [PlaceElem<'tcx>])> + 'a where Self: 'a;
-  fn refs_in_projection(&self) -> Self::RefsInProjectionIter<'_> {
+  fn refs_in_projection(
+    &self,
+    body: &Body<'tcx>,
+    tcx: TyCtxt<'tcx>,
+  ) -> Self::RefsInProjectionIter<'_> {
     self
       .projection
       .iter()
       .enumerate()
-      .filter_map(|(i, elem)| match elem {
+      .scan(
+        Place::from(self.local).ty(body, tcx),
+        move |ty, (i, elem)| {
+          let old_ty = *ty;
+          *ty = ty.projection_ty(tcx, elem);
+          Some((i, elem, old_ty))
+        },
+      )
+      .filter_map(|(i, elem, ty)| match elem {
         ProjectionElem::Deref => {
           let ptr = PlaceRef {
             local: self.local,
             projection: &self.projection[.. i],
           };
           let after = &self.projection[i + 1 ..];
-          Some((ptr, after))
+          (!ty.ty.is_box()).then_some((ptr, after))
         }
         _ => None,
       })
@@ -453,7 +473,6 @@ impl<'tcx> TypeVisitor<TyCtxt<'tcx>> for CollectRegions<'tcx> {
 
     match ty.kind() {
       _ if ty.is_box() => {
-        self.visit_region(Region::new_var(tcx, UNKNOWN_REGION));
         self.place_stack.push(ProjectionElem::Deref);
         self.visit_ty(ty.boxed_ty());
         self.place_stack.pop();
@@ -651,17 +670,44 @@ fn foobar(x: &i32) {
       let name_map = body.debug_info_name_map();
       let x = Place::from_local(name_map["x"], tcx);
       assert!(x.is_arg(body));
-      assert!(x.is_direct(body));
-      assert!(Place::make(x.local, &[PlaceElem::Deref], tcx).is_direct(body));
+      assert!(x.is_direct(body, tcx));
+      assert!(Place::make(x.local, &[PlaceElem::Deref], tcx).is_direct(body, tcx));
 
       let y = Place::from_local(name_map["y"], tcx);
       assert!(!y.is_arg(body));
-      assert!(y.is_direct(body));
+      assert!(y.is_direct(body, tcx));
 
       let z = Place::from_local(name_map["z"], tcx);
       assert!(!z.is_arg(body));
-      assert!(z.is_direct(body));
-      assert!(!Place::make(z.local, &[PlaceElem::Deref], tcx).is_direct(body));
+      assert!(z.is_direct(body, tcx));
+      assert!(!Place::make(z.local, &[PlaceElem::Deref], tcx).is_direct(body, tcx));
+
+      let k = Place::from_local(name_map["k"], tcx);
+      assert!(!k.is_arg(body));
+      assert!(k.is_direct(body, tcx));
+      assert!(Place::make(k.local, &[PlaceElem::Deref], tcx).is_direct(body, tcx));
+      let deref_k = Place::make(k.local, &[PlaceElem::Deref], tcx);
+      assert!(deref_k.is_direct(body, tcx));
+      assert!(!deref_k.is_arg(body));
+      assert_eq!(deref_k.refs_in_projection(body, tcx).count(), 0);
+
+      let ref_k = Place::from_local(name_map["ref_k"], tcx);
+      assert!(!ref_k.is_arg(body));
+      assert!(k.is_direct(body, tcx));
+      let deref_ref_k =
+        Place::make(ref_k.local, &[PlaceElem::Deref, PlaceElem::Deref], tcx);
+      assert!(deref_ref_k.is_direct(body, tcx));
+      assert_eq!(deref_ref_k.refs_in_projection(body, tcx).count(), 1);
+
+      let box_ref = Place::from_local(name_map["box_ref"], tcx);
+      assert!(!box_ref.is_arg(body));
+      assert!(!box_ref.is_indirect());
+      let box_ref_deref = Place::make(box_ref.local, &[PlaceElem::Deref], tcx);
+      assert_eq!(box_ref_deref.refs_in_projection(body, tcx).count(), 0);
+      assert!(box_ref_deref.is_direct(body, tcx));
+      let box_ref_deref_deref = box_ref_deref.project_deeper(&[PlaceElem::Deref], tcx);
+      assert_eq!(box_ref_deref_deref.refs_in_projection(body, tcx).count(), 1);
+      assert!(!box_ref_deref_deref.is_direct(body, tcx));
     });
   }
 
