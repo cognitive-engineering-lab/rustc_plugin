@@ -628,15 +628,10 @@ impl<'tcx> TypeVisitor<TyCtxt<'tcx>> for CollectRegions<'tcx> {
 
 #[cfg(test)]
 mod test {
-  use rustc_borrowck::consumers::BodyWithBorrowckFacts;
-  use rustc_hir::BodyId;
-  use rustc_middle::{
-    mir::{Place, PlaceElem},
-    ty::TyCtxt,
-  };
+  use rustc_middle::mir::{Place, PlaceElem};
 
   use super::{BodyExt, PlaceExt};
-  use crate::test_utils::{self, compare_sets, Placer};
+  use crate::test_utils::{self, compare_sets, CompileResult, Placer};
 
   #[test]
   fn test_place_arg_direct() {
@@ -646,7 +641,9 @@ fn foobar(x: &i32) {
   let z = &y;
 }
 "#;
-    test_utils::compile_body(input, |tcx, _, body_with_facts| {
+    test_utils::CompileBuilder::new(input).compile(|result| {
+      let tcx = result.tcx;
+      let (_, body_with_facts) = result.as_body();
       let body = &body_with_facts.body;
       let name_map = body.debug_info_name_map();
       let x = Place::from_local(name_map["x"], tcx);
@@ -677,7 +674,9 @@ fn main() {
   let p = &Point { x: 0, y: 0 };
 }
     "#;
-    test_utils::compile_body(input, |tcx, _, body_with_facts| {
+    test_utils::CompileBuilder::new(input).compile(|result| {
+      let tcx = result.tcx;
+      let (_, body_with_facts) = result.as_body();
       let body = &body_with_facts.body;
       let p = Placer::new(tcx, body);
 
@@ -720,11 +719,9 @@ fn main() {
   let y = (0, &x);
 }
     "#;
-    fn callback<'tcx>(
-      tcx: TyCtxt<'tcx>,
-      body_id: BodyId,
-      body_with_facts: &BodyWithBorrowckFacts<'tcx>,
-    ) {
+    fn callback<'tcx>(result: CompileResult<'tcx>) {
+      let tcx = result.tcx;
+      let (body_id, body_with_facts) = result.as_body();
       let body = &body_with_facts.body;
       let def_id = tcx.hir().body_owner_def_id(body_id).to_def_id();
       let p = Placer::new(tcx, body);
@@ -745,6 +742,6 @@ fn main() {
         [y1],
       );
     }
-    test_utils::compile_body(input, callback);
+    test_utils::CompileBuilder::new(input).compile(callback);
   }
 }

@@ -215,7 +215,9 @@ mod test {
       for _ in 0 .. 1 { x = 4; }
       x = 5;
     }"#;
-    test_utils::compile_body(input, move |tcx, _, body_with_facts| {
+    test_utils::CompileBuilder::new(input).compile(|result| {
+      let tcx = result.tcx;
+      let (_, body_with_facts) = result.as_body();
       let body = &body_with_facts.body;
       let control_deps = body.control_dependencies();
 

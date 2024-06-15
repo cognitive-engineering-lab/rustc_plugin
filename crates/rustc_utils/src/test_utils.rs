@@ -69,31 +69,66 @@ thread_local! {
   });
 }
 
-pub fn compile_body_with_range(
-  input: impl Into<String>,
-  compute_target: impl FnOnce() -> ByteRange + Send,
-  callback: impl for<'tcx> FnOnce(TyCtxt<'tcx>, BodyId, &'tcx BodyWithBorrowckFacts<'tcx>, ByteRange)
-    + Send,
-) {
-  compile(input, |tcx| {
-    let target = compute_target();
-    let body_id = find_enclosing_bodies(tcx, target.to_span(tcx).unwrap())
-      .next()
-      .unwrap();
-    let def_id = tcx.hir().body_owner_def_id(body_id);
-    let body_with_facts = borrowck_facts::get_body_with_borrowck_facts(tcx, def_id);
-    debug!("{}", body_with_facts.body.to_string(tcx).unwrap());
-
-    callback(tcx, body_id, body_with_facts, target);
-  })
+/// Programmatically build a rustc compilation session
+pub struct CompileBuilder {
+  input: String,
+  arguments: Vec<String>,
 }
 
-pub fn compile_body(
-  input: impl Into<String>,
-  callback: impl for<'tcx> FnOnce(TyCtxt<'tcx>, BodyId, &'tcx BodyWithBorrowckFacts<'tcx>)
-    + Send,
-) {
-  compile(input, |tcx| {
+impl CompileBuilder {
+  pub fn new(input: impl Into<String>) -> Self {
+    Self {
+      input: input.into(),
+      arguments: vec![],
+    }
+  }
+
+  /// Append additional rustc arguments
+  pub fn with_args(&mut self, args: impl IntoIterator<Item = String>) -> &mut Self {
+    self.arguments.extend(args);
+    self
+  }
+
+  pub fn compile(&self, f: impl for<'tcx> FnOnce(CompileResult<'tcx>) + Send) {
+    let mut callbacks = TestCallbacks {
+      callback: Some(move |tcx: TyCtxt<'_>| f(CompileResult { tcx })),
+    };
+    let args = [
+      "rustc",
+      DUMMY_FILE_NAME,
+      "--crate-type",
+      "lib",
+      "--edition=2021",
+      "-Zidentify-regions",
+      "-Zmir-opt-level=0",
+      "-Zmaximal-hir-to-mir-coverage",
+      "--allow",
+      "warnings",
+      "--sysroot",
+      &*SYSROOT,
+    ]
+    .into_iter()
+    .map(|s| s.to_owned())
+    .chain(self.arguments.iter().cloned())
+    .collect::<Box<_>>();
+
+    rustc_driver::catch_fatal_errors(|| {
+      let mut compiler = rustc_driver::RunCompiler::new(&args, &mut callbacks);
+      compiler.set_file_loader(Some(Box::new(StringLoader(self.input.clone()))));
+      compiler.run()
+    })
+    .unwrap()
+    .unwrap();
+  }
+}
+
+pub struct CompileResult<'tcx> {
+  pub tcx: TyCtxt<'tcx>,
+}
+
+impl<'tcx> CompileResult<'tcx> {
+  pub fn as_body(&self) -> (BodyId, &'tcx BodyWithBorrowckFacts<'tcx>) {
+    let tcx = self.tcx;
     let hir = tcx.hir();
     let body_id = hir
       .items()
@@ -107,28 +142,23 @@ pub fn compile_body(
     let def_id = tcx.hir().body_owner_def_id(body_id);
     let body_with_facts = borrowck_facts::get_body_with_borrowck_facts(tcx, def_id);
     debug!("{}", body_with_facts.body.to_string(tcx).unwrap());
+    (body_id, body_with_facts)
+  }
 
-    callback(tcx, body_id, body_with_facts);
-  })
-}
+  pub fn as_body_with_range(
+    &self,
+    target: ByteRange,
+  ) -> (BodyId, &'tcx BodyWithBorrowckFacts) {
+    let tcx = self.tcx;
+    let body_id = find_enclosing_bodies(tcx, target.to_span(tcx).unwrap())
+      .next()
+      .unwrap();
+    let def_id = tcx.hir().body_owner_def_id(body_id);
+    let body_with_facts = borrowck_facts::get_body_with_borrowck_facts(tcx, def_id);
+    debug!("{}", body_with_facts.body.to_string(tcx).unwrap());
 
-pub fn compile(input: impl Into<String>, callback: impl FnOnce(TyCtxt<'_>) + Send) {
-  let mut callbacks = TestCallbacks {
-    callback: Some(callback),
-  };
-  let args = format!(
-    "rustc {DUMMY_FILE_NAME} --crate-type lib --edition=2021 -Z identify-regions -Z mir-opt-level=0 -Z maximal-hir-to-mir-coverage --allow warnings --sysroot {}",
-    &*SYSROOT
-  );
-  let args = args.split(' ').map(|s| s.to_string()).collect::<Vec<_>>();
-
-  rustc_driver::catch_fatal_errors(|| {
-    let mut compiler = rustc_driver::RunCompiler::new(&args, &mut callbacks);
-    compiler.set_file_loader(Some(Box::new(StringLoader(input.into()))));
-    compiler.run()
-  })
-  .unwrap()
-  .unwrap();
+    (body_id, body_with_facts)
+  }
 }
 
 struct TestCallbacks<Cb> {
