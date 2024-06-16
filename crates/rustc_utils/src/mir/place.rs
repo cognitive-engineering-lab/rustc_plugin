@@ -663,6 +663,9 @@ mod test {
 fn foobar(x: &i32) {
   let y = 1;
   let z = &y;
+  let k = Box::new(*x);
+  let ref_k = &k;
+  let box_ref = Box::new(x);
 }
 "#;
     test_utils::compile_body(input, |tcx, _, body_with_facts| {
