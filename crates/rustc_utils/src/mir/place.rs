@@ -1,6 +1,6 @@
 //! Utilities for [`Place`].
 
-use std::{borrow::Cow, collections::VecDeque, ops::ControlFlow};
+use std::{borrow::Cow, collections::VecDeque};
 
 use log::{trace, warn};
 use rustc_data_structures::fx::{FxHashMap as HashMap, FxHashSet as HashSet};
@@ -724,7 +724,7 @@ struct Point { x: usize, y: usize }
 fn main() {
   let x = (0, 0);
   let y = Some(1);
-  let z = &[Some((0, 1))];    
+  let z = &[Some((0, 1))];
   let w = (&y,);
   let p = &Point { x: 0, y: 0 };
 }
