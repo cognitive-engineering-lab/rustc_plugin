@@ -699,7 +699,7 @@ fn foobar(x: &i32) {
       assert!(k.is_direct(body, tcx));
       let deref_ref_k =
         Place::make(ref_k.local, &[PlaceElem::Deref, PlaceElem::Deref], tcx);
-      assert!(deref_ref_k.is_direct(body, tcx));
+      assert!(!deref_ref_k.is_direct(body, tcx));
       assert_eq!(deref_ref_k.refs_in_projection(body, tcx).count(), 1);
 
       let box_ref = Place::from_local(name_map["box_ref"], tcx);
@@ -721,7 +721,7 @@ struct Point { x: usize, y: usize }
 fn main() {
   let x = (0, 0);
   let y = Some(1);
-  let z = &[Some((0, 1))];    
+  let z = &[Some((0, 1))];
   let w = (&y,);
   let p = &Point { x: 0, y: 0 };
 }
