@@ -244,9 +244,7 @@ mod test {
     f: impl for<'tcx> FnOnce(TyCtxt<'tcx>, BodyId, &Body<'tcx>, Vec<Span>) + Send,
   ) {
     let (input, _) = test_utils::parse_ranges(src, [("`(", ")`")]).unwrap();
-    test_utils::CompileBuilder::new(input).compile(move |result| {
-      let tcx = result.tcx;
-      let (body_id, body_with_facts) = result.as_body();
+    test_utils::compile_body(input, move |tcx, body_id, body_with_facts| {
       let (_, mut ranges) = test_utils::parse_ranges(src, [("`(", ")`")]).unwrap();
       let spans = ranges
         .remove("`(")
@@ -338,9 +336,7 @@ mod test {
     borrowck_facts::enable_mir_simplification();
 
     let (input, _ranges) = test_utils::parse_ranges(src, [("`(", ")`")]).unwrap();
-    test_utils::CompileBuilder::new(input).compile(move |result| {
-      let tcx = result.tcx;
-      let (body_id, body_with_facts) = result.as_body();
+    test_utils::compile_body(input, move |tcx, body_id, body_with_facts| {
       let body = &body_with_facts.body;
       let source_map = tcx.sess.source_map();
 

@@ -76,9 +76,7 @@ fn main() {
   let y = 0;
 }"#;
 
-    test_utils::CompileBuilder::new(input).compile(|result| {
-      let tcx = result.tcx;
-      let body = result.as_body().1;
+    test_utils::compile_body(input, |tcx, _, body| {
       let body = &body.body;
       let locals = body.debug_info_name_map();
       let x = &body.local_decls[locals["x"]];

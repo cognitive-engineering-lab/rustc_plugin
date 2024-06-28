@@ -122,6 +122,17 @@ impl CompileBuilder {
   }
 }
 
+pub fn compile_body(
+  input: impl Into<String>,
+  callback: impl for<'tcx> FnOnce(TyCtxt<'tcx>, BodyId, &'tcx BodyWithBorrowckFacts<'tcx>)
+    + Send,
+) {
+  CompileBuilder::new(input).compile(|result| {
+    let (body_id, body_with_facts) = result.as_body();
+    callback(result.tcx, body_id, body_with_facts)
+  })
+}
+
 pub struct CompileResult<'tcx> {
   pub tcx: TyCtxt<'tcx>,
 }
