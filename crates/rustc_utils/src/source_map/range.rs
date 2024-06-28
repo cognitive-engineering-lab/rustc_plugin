@@ -389,7 +389,7 @@ impl ToSpan for FunctionIdentifier {
 #[cfg(test)]
 mod test {
   use super::*;
-  use crate::test_utils;
+  use crate::test_utils::{self, CompileResult};
 
   #[test]
   fn test_range() {
@@ -403,7 +403,7 @@ mod test {
 "#
     );
 
-    test_utils::compile(input, |tcx| {
+    test_utils::CompileBuilder::new(input).compile(|CompileResult { tcx }| {
       let source_map = tcx.sess.source_map();
       let filename = Filename::intern("dummy.rs");
       filename.find_source_file(source_map).unwrap();
