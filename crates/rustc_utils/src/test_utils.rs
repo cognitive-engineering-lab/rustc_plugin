@@ -76,6 +76,7 @@ pub struct CompileBuilder {
 }
 
 impl CompileBuilder {
+  /// Initialize a compilation from this string of source code.
   pub fn new(input: impl Into<String>) -> Self {
     Self {
       input: input.into(),
@@ -89,6 +90,8 @@ impl CompileBuilder {
     self
   }
 
+  /// Perform the compilation, providing access to it's intermediates state to
+  /// the provided closure
   pub fn compile(&self, f: impl for<'tcx> FnOnce(CompileResult<'tcx>) + Send) {
     let mut callbacks = TestCallbacks {
       callback: Some(move |tcx: TyCtxt<'_>| f(CompileResult { tcx })),
@@ -122,6 +125,8 @@ impl CompileBuilder {
   }
 }
 
+/// Convenience alias for `CompileBuilder::new(input).compile(...)` if the
+/// callback is going to use [`CompileResult::as_body`].
 pub fn compile_body(
   input: impl Into<String>,
   callback: impl for<'tcx> FnOnce(TyCtxt<'tcx>, BodyId, &'tcx BodyWithBorrowckFacts<'tcx>)
@@ -133,11 +138,15 @@ pub fn compile_body(
   })
 }
 
+/// State during the rust compilation. Most of the time you only care about
+/// `self.tcx`, but this wrapper provides additional convenience methods for
+/// getting, e.g. the body of the configured entrypoint.
 pub struct CompileResult<'tcx> {
   pub tcx: TyCtxt<'tcx>,
 }
 
 impl<'tcx> CompileResult<'tcx> {
+  /// Assume that we compiled only one function and return that function's id and body.
   pub fn as_body(&self) -> (BodyId, &'tcx BodyWithBorrowckFacts<'tcx>) {
     let tcx = self.tcx;
     let hir = tcx.hir();
@@ -156,6 +165,7 @@ impl<'tcx> CompileResult<'tcx> {
     (body_id, body_with_facts)
   }
 
+  /// Find a body in the target byte range.
   pub fn as_body_with_range(
     &self,
     target: ByteRange,
