@@ -69,8 +69,19 @@ pub fn override_queries(_session: &rustc_session::Session, local: &mut Providers
   local.mir_borrowck = mir_borrowck;
 }
 
+/// A key comprising of the address of the pointer to the global context
+/// (essentially `TyCtxt`) and the actual id. This is needed because in test
+/// cases sometimes there are multiple `TyCtxt`s live at the same time that
+/// assign the same id to a body and race on this cache.
+type CacheKey = (LocalDefId, usize);
+
 thread_local! {
-  static MIR_BODIES: Cache<LocalDefId, BodyWithBorrowckFacts<'static>> = Cache::default();
+  /// See [`CacheKey`] for safety info
+  static MIR_BODIES: Cache<CacheKey, BodyWithBorrowckFacts<'static>> = Cache::default();
+}
+
+fn make_key(_tcx: TyCtxt<'_>, def_id: LocalDefId) -> CacheKey {
+  (def_id, std::ptr::addr_of!(*_tcx) as usize)
 }
 
 fn mir_borrowck(tcx: TyCtxt<'_>, def_id: LocalDefId) -> &BorrowCheckResult<'_> {
@@ -93,7 +104,7 @@ fn mir_borrowck(tcx: TyCtxt<'_>, def_id: LocalDefId) -> &BorrowCheckResult<'_> {
   let body_with_facts: BodyWithBorrowckFacts<'static> =
     unsafe { std::mem::transmute(body_with_facts) };
   MIR_BODIES.with(|cache| {
-    cache.get(def_id, |_| body_with_facts);
+    cache.get(make_key(tcx, def_id), |_| body_with_facts);
   });
 
   let mut providers = Providers::default();
@@ -120,7 +131,7 @@ pub fn get_body_with_borrowck_facts<'tcx>(
 ) -> &'tcx BodyWithBorrowckFacts<'tcx> {
   let _ = tcx.mir_borrowck(def_id);
   MIR_BODIES.with(|cache| {
-    let body = cache.get(def_id, |_| panic!("mir_borrowck override should have stored body for item: {def_id:?}. Are you sure you registered borrowck_facts::override_queries?"));
+    let body = cache.get(make_key(tcx, def_id), |_| panic!("mir_borrowck override should have stored body for item: {def_id:?}. Are you sure you registered borrowck_facts::override_queries?"));
     unsafe {
       std::mem::transmute::<
         &BodyWithBorrowckFacts<'static>,
