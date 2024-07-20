@@ -80,8 +80,8 @@ thread_local! {
   static MIR_BODIES: Cache<CacheKey, BodyWithBorrowckFacts<'static>> = Cache::default();
 }
 
-fn make_key(_tcx: TyCtxt<'_>, def_id: LocalDefId) -> CacheKey {
-  (def_id, std::ptr::addr_of!(*_tcx) as usize)
+fn make_key(tcx: TyCtxt<'_>, def_id: LocalDefId) -> CacheKey {
+  (def_id, *tcx as *const _ as usize)
 }
 
 fn mir_borrowck(tcx: TyCtxt<'_>, def_id: LocalDefId) -> &BorrowCheckResult<'_> {
