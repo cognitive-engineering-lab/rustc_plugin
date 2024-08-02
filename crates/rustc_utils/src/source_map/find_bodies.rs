@@ -70,7 +70,7 @@ pub fn find_enclosing_bodies(tcx: TyCtxt, sp: Span) -> impl Iterator<Item = Body
 #[cfg(test)]
 mod test {
   use super::*;
-  use crate::test_utils;
+  use crate::test_utils::{self, CompileResult};
 
   #[test]
   fn test_find_bodies() {
@@ -92,7 +92,7 @@ macro_rules! m {
 // Ignore macro-generated bodies
 m!{}
 "#;
-    test_utils::compile(input, |tcx| {
+    test_utils::CompileBuilder::new(input).compile(|CompileResult { tcx }| {
       assert_eq!(find_bodies(tcx).len(), 3);
     });
   }
