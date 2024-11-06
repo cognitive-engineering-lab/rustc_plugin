@@ -1,6 +1,6 @@
 [package]
 name = "rustc_plugin"
-version = "0.10.0-nightly-2024-05-20"
+version = "0.11.0-nightly-2024-11-05"
 edition = "2021"
 authors = ["Will Crichton <crichton.will@gmail.com>"]
 description = "A framework for writing plugins that integrate with the Rust compiler"
@@ -13,7 +13,7 @@ rustc_private = true
 [dependencies]
 rustc_tools_util = "0.1"
 log = "0.4"
-cargo_metadata = "0.14"
+cargo_metadata = "0.18.1"
 serde = "1"
 serde_json = "1"
 
