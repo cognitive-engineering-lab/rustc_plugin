@@ -350,7 +350,7 @@ pub struct PlaceBuilder<'a, 'tcx> {
   place: Place<'tcx>,
 }
 
-impl<'a, 'tcx> PlaceBuilder<'a, 'tcx> {
+impl<'tcx> PlaceBuilder<'_, 'tcx> {
   pub fn field(mut self, i: usize) -> Self {
     let f = FieldIdx::from_usize(i);
     let ty = self

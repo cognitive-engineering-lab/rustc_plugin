@@ -78,14 +78,10 @@ impl rustc_driver::Callbacks for PrintAllItemsCallbacks {
   fn after_analysis<'tcx>(
     &mut self,
     _compiler: &rustc_interface::interface::Compiler,
-    queries: &'tcx rustc_interface::Queries<'tcx>,
+    tcx: TyCtxt<'tcx>,
   ) -> rustc_driver::Compilation {
-    // We extract a key data structure, the `TyCtxt`, which is all we need
-    // for our simple task of printing out item names.
-    queries
-      .global_ctxt()
-      .unwrap()
-      .enter(|tcx| print_all_items(tcx, &self.args));
+    // We call our top-level function with access to the type context `tcx` and the CLI arguments.
+    print_all_items(tcx, &self.args);
 
     // Note that you should generally allow compilation to continue. If
     // your plugin is being invoked on a dependency, then you need to ensure

@@ -283,7 +283,8 @@ impl ByteRange {
       let external = file.external_src.borrow();
       let _src = file
         .src
-        .as_ref()
+        .as_deref()
+        .map(|s| s.as_str())
         .unwrap_or_else(|| external.get_source().as_ref().unwrap());
 
       let byte_start = BytePos(span.lo().0 as usize);

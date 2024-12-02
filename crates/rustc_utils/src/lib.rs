@@ -15,7 +15,6 @@
   negative_impls,        // for !Send
   min_specialization,    // for rustc_index::newtype_index 
   type_alias_impl_trait, // for iterators in traits
-  lazy_cell,             // for global constants w/ heap allocation
   box_patterns,          // for ergonomics
   let_chains,            // for places_conflict module
   exact_size_is_empty,   // for graphviz module
