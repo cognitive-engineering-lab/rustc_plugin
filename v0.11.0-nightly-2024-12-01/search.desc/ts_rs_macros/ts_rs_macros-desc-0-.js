@@ -1,0 +1,1 @@
+searchState.loadedDescShard("ts_rs_macros", 0, "Derives TS for a struct or enum. Please take a look at TS …")

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["BitIter","BitMatrix","BitSet","ChunkedBitIter","ChunkedBitSet","FiniteBitSet","GrowableBitSet","SparseBitMatrix"],"trait":["BitRelations","FiniteBitSetTy"]};
