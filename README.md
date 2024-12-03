@@ -44,6 +44,7 @@ The `rustc_plugin` framework is responsible for marshalling arguments from the t
 
 Normally, Rust libraries have a [minimum supported Rust version][msrv] because they promise to not use any breaking features implemented after that version. Rust compiler plugins are the opposite &mdash; they have a **maximum** supported Rust version (MaxSRV). A compiler plugin cannot analyze programs that use features implemented after the release date of the plugin's toolchain. The MaxSRV for every version of `rustc_plugin` is listed below:
 
+* v0.11 (`nightly-2024-12-01`) - rustc 1.84
 * v0.10 (`nightly-2024-05-20`) - rustc 1.79
 * v0.9 (`nightly-2024-01-24`) - rustc 1.76
 * v0.8 (`nightly-2024-01-06`) - rustc 1.76
