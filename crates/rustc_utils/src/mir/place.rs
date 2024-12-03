@@ -649,7 +649,7 @@ mod test {
 
   #[test]
   fn test_place_arg_direct() {
-    let input = r#"
+    let input = r"
 fn foobar(x: &i32) {
   let y = 1;
   let z = &y;
@@ -657,7 +657,7 @@ fn foobar(x: &i32) {
   let ref_k = &k;
   let box_ref = Box::new(x);
 }
-"#;
+";
     test_utils::compile_body(input, |tcx, _, body_with_facts| {
       let body = &body_with_facts.body;
       let name_map = body.debug_info_name_map();
@@ -706,7 +706,7 @@ fn foobar(x: &i32) {
 
   #[test]
   fn test_place_to_string() {
-    let input = r#"
+    let input = r"
 struct Point { x: usize, y: usize }
 fn main() {
   let x = (0, 0);
@@ -714,8 +714,7 @@ fn main() {
   let z = &[Some((0, 1))];
   let w = (&y,);
   let p = &Point { x: 0, y: 0 };
-}
-    "#;
+}";
     test_utils::compile_body(input, |tcx, _, body_with_facts| {
       let body = &body_with_facts.body;
       let p = Placer::new(tcx, body);
@@ -753,12 +752,12 @@ fn main() {
 
   #[test]
   fn test_place_visitors() {
-    let input = r#"
+    let input = r"
 fn main() {
   let x = 0;
   let y = (0, &x);
 }
-    "#;
+";
     fn callback<'tcx>(
       tcx: TyCtxt<'tcx>,
       body_id: BodyId,

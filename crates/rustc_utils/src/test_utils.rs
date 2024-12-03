@@ -435,7 +435,7 @@ mod test {
           end: BytePos(3),
           filename: *filename,
         },
-      ])
+      ]);
     });
   }
 }

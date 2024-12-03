@@ -64,11 +64,11 @@ mod test {
 
   #[test]
   fn test_ty_ext() {
-    let input = r#"
+    let input = r"
 fn main() {
   let x = &mut 0;
   let y = 0;
-}"#;
+}";
 
     test_utils::compile_body(input, |tcx, _, body| {
       let body = &body.body;

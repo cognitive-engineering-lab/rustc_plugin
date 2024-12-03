@@ -66,7 +66,7 @@ mod test {
           .map(|(_, t)| t)
           .copied()
           .collect::<Vec<_>>();
-        result.sort();
+        result.sort_unstable();
         result
       };
 

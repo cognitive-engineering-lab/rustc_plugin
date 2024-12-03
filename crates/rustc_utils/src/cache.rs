@@ -208,7 +208,7 @@ mod test {
       }
     }
 
-    let cache = RecursiveUse(Default::default());
+    let cache = RecursiveUse(Cache::default());
 
     assert_eq!(cache.get_infinite_recursion(60), 42);
     assert_eq!(cache.get_safe_recursion(5), 15);

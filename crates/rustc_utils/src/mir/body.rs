@@ -205,14 +205,14 @@ mod test {
 
   #[test]
   fn test_body_ext() {
-    let input = r#"
-    fn foobar<'a>(x: &'a i32, y: &'a i32) -> &'a i32 {
-      if *x > 0 {
-        return x;
-      }
+    let input = r"
+fn foobar<'a>(x: &'a i32, y: &'a i32) -> &'a i32 {
+  if *x > 0 {
+    return x;
+  }
 
-      y
-    }"#;
+  y
+}";
 
     test_utils::compile_body(input, |_, _, body| {
       let body = &body.body;
