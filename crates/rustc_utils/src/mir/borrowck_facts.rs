@@ -39,9 +39,6 @@ pub fn simplify_mir(body: &mut Body<'_>) {
       TerminatorKind::FalseEdge { real_target, .. } => TerminatorKind::Goto {
         target: real_target,
       },
-      TerminatorKind::FalseUnwind { real_target, .. } => TerminatorKind::Goto {
-        target: real_target,
-      },
       // Ensures that control dependencies can determine the independence of differnet
       // return paths
       TerminatorKind::Goto { target } if return_blocks.contains(&target) => {
@@ -90,7 +87,7 @@ fn mir_borrowck(tcx: TyCtxt<'_>, def_id: LocalDefId) -> &BorrowCheckResult<'_> {
   let body_with_facts: BodyWithBorrowckFacts<'static> =
     unsafe { std::mem::transmute(body_with_facts) };
   MIR_BODIES.with(|cache| {
-    cache.get(def_id, |_| body_with_facts);
+    cache.get(&def_id, |_| body_with_facts);
   });
 
   let mut providers = Providers::default();
@@ -117,7 +114,7 @@ pub fn get_body_with_borrowck_facts<'tcx>(
 ) -> &'tcx BodyWithBorrowckFacts<'tcx> {
   let _ = tcx.mir_borrowck(def_id);
   MIR_BODIES.with(|cache| {
-    let body = cache.get(def_id, |_| panic!("mir_borrowck override should have stored body for item: {def_id:?}. Are you sure you registered borrowck_facts::override_queries?"));
+    let body = cache.get(&def_id, |_| panic!("mir_borrowck override should have stored body for item: {def_id:?}. Are you sure you registered borrowck_facts::override_queries?"));
     unsafe {
       std::mem::transmute::<
         &BodyWithBorrowckFacts<'static>,

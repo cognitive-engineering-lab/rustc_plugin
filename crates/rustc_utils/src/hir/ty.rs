@@ -1,6 +1,5 @@
 //! Utilities for [`Ty`].
 
-use rustc_data_structures::captures::Captures;
 use rustc_hir::def_id::DefId;
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::ty::{GenericArgKind, ParamEnv, Region, Ty, TyCtxt, TypingEnv};
@@ -9,32 +8,24 @@ use rustc_type_ir::TypingMode;
 
 /// Extension trait for [`Ty`].
 pub trait TyExt<'tcx> {
-  type AllRegionsIter<'a>: Iterator<Item = Region<'tcx>>
-  where
-    Self: 'a;
-
   /// Returns an iterator over the regions appearing within a type.
-  fn inner_regions(&self) -> Self::AllRegionsIter<'_>;
+  fn inner_regions(self) -> impl Iterator<Item = Region<'tcx>>;
 
   /// Returns true if a type implements a given trait.
   fn does_implement_trait(
-    &self,
+    self,
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     trait_def_id: DefId,
   ) -> bool;
 
+  #[allow(clippy::wrong_self_convention)]
   /// Returns true if a type implements `Copy`.
-  fn is_copyable(&self, tcx: TyCtxt<'tcx>, typing_env: TypingEnv<'tcx>) -> bool;
+  fn is_copyable(self, tcx: TyCtxt<'tcx>, typing_env: TypingEnv<'tcx>) -> bool;
 }
 
 impl<'tcx> TyExt<'tcx> for Ty<'tcx> {
-  type AllRegionsIter<'a>
-    = impl Iterator<Item = Region<'tcx>> + Captures<'tcx> + 'a
-  where
-    Self: 'a;
-
-  fn inner_regions(&self) -> Self::AllRegionsIter<'_> {
+  fn inner_regions(self) -> impl Iterator<Item = Region<'tcx>> {
     self.walk().filter_map(|part| match part.unpack() {
       GenericArgKind::Lifetime(region) => Some(region),
       _ => None,
@@ -42,7 +33,7 @@ impl<'tcx> TyExt<'tcx> for Ty<'tcx> {
   }
 
   fn does_implement_trait(
-    &self,
+    self,
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     trait_def_id: DefId,
@@ -50,7 +41,7 @@ impl<'tcx> TyExt<'tcx> for Ty<'tcx> {
     use rustc_infer::traits::EvaluationResult;
 
     let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
-    let ty = tcx.erase_regions(*self);
+    let ty = tcx.erase_regions(self);
     let result = infcx.type_implements_trait(trait_def_id, [ty], param_env);
     matches!(
       result,
@@ -58,8 +49,8 @@ impl<'tcx> TyExt<'tcx> for Ty<'tcx> {
     )
   }
 
-  fn is_copyable(&self, tcx: TyCtxt<'tcx>, typing_env: TypingEnv<'tcx>) -> bool {
-    let ty = tcx.erase_regions(*self);
+  fn is_copyable(self, tcx: TyCtxt<'tcx>, typing_env: TypingEnv<'tcx>) -> bool {
+    let ty = tcx.erase_regions(self);
     ty.is_copy_modulo_regions(tcx, typing_env)
   }
 }

@@ -58,19 +58,13 @@ pub trait PlaceExt<'tcx> {
   /// - all dereferences in `self` are dereferences of a `Box`
   fn is_direct(&self, body: &Body<'tcx>, tcx: TyCtxt<'tcx>) -> bool;
 
-  type RefsInProjectionIter<'a>: Iterator<
-    Item = (PlaceRef<'tcx>, &'tcx [PlaceElem<'tcx>]),
-  >
-  where
-    Self: 'a;
-
   /// Returns an iterator over all prefixes of `self`'s projection that are references,
   ///  along with the suffix of the remaining projection.
   fn refs_in_projection(
-    &self,
+    self,
     body: &Body<'tcx>,
     tcx: TyCtxt<'tcx>,
-  ) -> Self::RefsInProjectionIter<'_>;
+  ) -> impl Iterator<Item = (PlaceRef<'tcx>, &'tcx [PlaceElem<'tcx>])>;
 
   /// Returns all possible projections of `self` that are references.
   ///
@@ -142,35 +136,22 @@ impl<'tcx> PlaceExt<'tcx> for Place<'tcx> {
       || self.refs_in_projection(body, tcx).next().is_none()
   }
 
-  type RefsInProjectionIter<'a>
-    = impl Iterator<Item = (PlaceRef<'tcx>, &'tcx [PlaceElem<'tcx>])> + 'a
-  where
-    Self: 'a;
   fn refs_in_projection(
-    &self,
+    self,
     body: &Body<'tcx>,
     tcx: TyCtxt<'tcx>,
-  ) -> Self::RefsInProjectionIter<'_> {
+  ) -> impl Iterator<Item = (PlaceRef<'tcx>, &'tcx [PlaceElem<'tcx>])> {
     self
-      .projection
-      .iter()
+      .iter_projections()
       .enumerate()
-      .scan(
-        Place::from(self.local).ty(body, tcx),
-        move |ty, (i, elem)| {
-          let old_ty = *ty;
-          *ty = ty.projection_ty(tcx, elem);
-          Some((i, elem, old_ty))
-        },
-      )
-      .filter_map(|(i, elem, ty)| match elem {
+      .filter_map(move |(i, (place_ref, elem))| match elem {
         ProjectionElem::Deref => {
           let ptr = PlaceRef {
             local: self.local,
             projection: &self.projection[.. i],
           };
           let after = &self.projection[i + 1 ..];
-          (!ty.ty.is_box()).then_some((ptr, after))
+          (!place_ref.ty(body.local_decls(), tcx).ty.is_box()).then_some((ptr, after))
         }
         _ => None,
       })

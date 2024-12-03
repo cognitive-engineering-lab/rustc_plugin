@@ -8,7 +8,10 @@
 
 use std::fmt;
 
-use rustc_data_structures::graph::{dominators::Dominators, vec_graph::VecGraph, *};
+use rustc_data_structures::graph::{
+  dominators, dominators::Dominators, iterate, vec_graph::VecGraph, ControlFlowGraph,
+  DirectedGraph, Predecessors, StartNode, Successors,
+};
 use rustc_index::{
   bit_set::{BitSet, ChunkedBitSet, SparseBitMatrix},
   Idx,

@@ -50,7 +50,7 @@ impl<'tcx> MirVisitor<'tcx> for MirSpanCollector<'_, 'tcx> {
       span: span.data(),
       locations,
       place: Place::from_local(RETURN_PLACE, self.0.tcx),
-    })
+    });
   }
 
   fn visit_place(
