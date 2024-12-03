@@ -9,17 +9,17 @@ use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::{
   mir::{
     visit::{PlaceContext, Visitor},
-    Body, HasLocalDecls, Local, Location, MirPass, Mutability, Place, PlaceElem,
-    PlaceRef, ProjectionElem, StatementKind, TerminatorKind, VarDebugInfo,
-    VarDebugInfoContents, RETURN_PLACE,
+    Body, HasLocalDecls, Local, Location, Mutability, Place, PlaceElem, PlaceRef,
+    ProjectionElem, VarDebugInfo, VarDebugInfoContents, RETURN_PLACE,
   },
   traits::ObligationCause,
   ty::{self, AdtKind, Region, RegionKind, RegionVid, Ty, TyCtxt, TyKind, TypeVisitor},
 };
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use rustc_trait_selection::traits::NormalizeExt;
+use rustc_type_ir::TypingMode;
 
-use crate::{AdtDefExt, BodyExt, SpanExt};
+use crate::{AdtDefExt, SpanExt};
 
 /// A MIR [`Visitor`] which collects all [`Place`]s that appear in the visited object.
 #[derive(Default)]
@@ -33,48 +33,6 @@ impl<'tcx> Visitor<'tcx> for PlaceCollector<'tcx> {
     _location: Location,
   ) {
     self.0.push(*place);
-  }
-}
-
-/// MIR pass to remove instructions not important for Flowistry.
-///
-/// This pass helps reduce the number of intermediates during dataflow analysis, which
-/// reduces memory usage.
-pub struct SimplifyMir;
-impl<'tcx> MirPass<'tcx> for SimplifyMir {
-  fn run_pass(&self, _tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
-    let return_blocks = body
-      .all_returns()
-      .filter_map(|loc| {
-        let bb = &body.basic_blocks[loc.block];
-        bb.statements.is_empty().then_some(loc.block)
-      })
-      .collect::<HashSet<_>>();
-
-    for block in body.basic_blocks_mut() {
-      block.statements.retain(|stmt| {
-        !matches!(
-          stmt.kind,
-          StatementKind::StorageLive(..) | StatementKind::StorageDead(..)
-        )
-      });
-
-      let terminator = block.terminator_mut();
-      terminator.kind = match terminator.kind {
-        TerminatorKind::FalseEdge { real_target, .. } => TerminatorKind::Goto {
-          target: real_target,
-        },
-        TerminatorKind::FalseUnwind { real_target, .. } => TerminatorKind::Goto {
-          target: real_target,
-        },
-        // Ensures that control dependencies can determine the independence of differnet
-        // return paths
-        TerminatorKind::Goto { target } if return_blocks.contains(&target) => {
-          TerminatorKind::Return
-        }
-        _ => continue,
-      }
-    }
   }
 }
 
@@ -100,19 +58,13 @@ pub trait PlaceExt<'tcx> {
   /// - all dereferences in `self` are dereferences of a `Box`
   fn is_direct(&self, body: &Body<'tcx>, tcx: TyCtxt<'tcx>) -> bool;
 
-  type RefsInProjectionIter<'a>: Iterator<
-    Item = (PlaceRef<'tcx>, &'tcx [PlaceElem<'tcx>]),
-  >
-  where
-    Self: 'a;
-
   /// Returns an iterator over all prefixes of `self`'s projection that are references,
   ///  along with the suffix of the remaining projection.
   fn refs_in_projection(
-    &self,
+    self,
     body: &Body<'tcx>,
     tcx: TyCtxt<'tcx>,
-  ) -> Self::RefsInProjectionIter<'_>;
+  ) -> impl Iterator<Item = (PlaceRef<'tcx>, &'tcx [PlaceElem<'tcx>])>;
 
   /// Returns all possible projections of `self` that are references.
   ///
@@ -184,32 +136,22 @@ impl<'tcx> PlaceExt<'tcx> for Place<'tcx> {
       || self.refs_in_projection(body, tcx).next().is_none()
   }
 
-  type RefsInProjectionIter<'a> = impl Iterator<Item = (PlaceRef<'tcx>, &'tcx [PlaceElem<'tcx>])> + 'a where Self: 'a;
   fn refs_in_projection(
-    &self,
+    self,
     body: &Body<'tcx>,
     tcx: TyCtxt<'tcx>,
-  ) -> Self::RefsInProjectionIter<'_> {
+  ) -> impl Iterator<Item = (PlaceRef<'tcx>, &'tcx [PlaceElem<'tcx>])> {
     self
-      .projection
-      .iter()
+      .iter_projections()
       .enumerate()
-      .scan(
-        Place::from(self.local).ty(body, tcx),
-        move |ty, (i, elem)| {
-          let old_ty = *ty;
-          *ty = ty.projection_ty(tcx, elem);
-          Some((i, elem, old_ty))
-        },
-      )
-      .filter_map(|(i, elem, ty)| match elem {
+      .filter_map(move |(i, (place_ref, elem))| match elem {
         ProjectionElem::Deref => {
           let ptr = PlaceRef {
             local: self.local,
             projection: &self.projection[.. i],
           };
           let after = &self.projection[i + 1 ..];
-          (!ty.ty.is_box()).then_some((ptr, after))
+          (!place_ref.ty(body.local_decls(), tcx).ty.is_box()).then_some((ptr, after))
         }
         _ => None,
       })
@@ -379,7 +321,10 @@ impl<'tcx> PlaceExt<'tcx> for Place<'tcx> {
   fn normalize(&self, tcx: TyCtxt<'tcx>, def_id: DefId) -> Place<'tcx> {
     let param_env = tcx.param_env(def_id);
     let place = tcx.erase_regions(*self);
-    let infcx = tcx.infer_ctxt().build();
+    let infcx = tcx.infer_ctxt().build(TypingMode::post_borrowck_analysis(
+      tcx,
+      def_id.expect_local(),
+    ));
     let place = infcx
       .at(&ObligationCause::dummy(), param_env)
       .normalize(place)
@@ -437,15 +382,6 @@ struct VisitedPlacesCollector<'tcx>(HashSet<Place<'tcx>>);
 impl<'tcx> RegionVisitorDispatcher<'tcx> for VisitedPlacesCollector<'tcx> {
   fn on_visit_place(&mut self, place: Place<'tcx>) {
     self.0.insert(place);
-  }
-}
-
-#[derive(Default)]
-struct VisitedTypesCollector<'tcx>(HashSet<Ty<'tcx>>);
-
-impl<'tcx> RegionVisitorDispatcher<'tcx> for VisitedTypesCollector<'tcx> {
-  fn on_visit_type(&mut self, ty: Ty<'tcx>) {
-    self.0.insert(ty);
   }
 }
 
@@ -530,7 +466,7 @@ impl<'tcx, Dispatcher: RegionVisitorDispatcher<'tcx>> TypeVisitor<TyCtxt<'tcx>>
     match ty.kind() {
       _ if ty.is_box() => {
         self.place_stack.push(ProjectionElem::Deref);
-        self.visit_ty(ty.boxed_ty());
+        self.visit_ty(ty.boxed_ty().expect("Cannot unbox boxed type??"));
         self.place_stack.pop();
       }
 
@@ -706,12 +642,14 @@ mod test {
     ty::TyCtxt,
   };
 
-  use super::{BodyExt, PlaceExt};
-  use crate::test_utils::{self, compare_sets, Placer};
+  use crate::{
+    test_utils::{self, compare_sets, Placer},
+    BodyExt, PlaceExt,
+  };
 
   #[test]
   fn test_place_arg_direct() {
-    let input = r#"
+    let input = r"
 fn foobar(x: &i32) {
   let y = 1;
   let z = &y;
@@ -719,7 +657,7 @@ fn foobar(x: &i32) {
   let ref_k = &k;
   let box_ref = Box::new(x);
 }
-"#;
+";
     test_utils::compile_body(input, |tcx, _, body_with_facts| {
       let body = &body_with_facts.body;
       let name_map = body.debug_info_name_map();
@@ -768,7 +706,7 @@ fn foobar(x: &i32) {
 
   #[test]
   fn test_place_to_string() {
-    let input = r#"
+    let input = r"
 struct Point { x: usize, y: usize }
 fn main() {
   let x = (0, 0);
@@ -776,8 +714,7 @@ fn main() {
   let z = &[Some((0, 1))];
   let w = (&y,);
   let p = &Point { x: 0, y: 0 };
-}
-    "#;
+}";
     test_utils::compile_body(input, |tcx, _, body_with_facts| {
       let body = &body_with_facts.body;
       let p = Placer::new(tcx, body);
@@ -815,12 +752,12 @@ fn main() {
 
   #[test]
   fn test_place_visitors() {
-    let input = r#"
+    let input = r"
 fn main() {
   let x = 0;
   let y = (0, &x);
 }
-    "#;
+";
     fn callback<'tcx>(
       tcx: TyCtxt<'tcx>,
       body_id: BodyId,

@@ -6,7 +6,7 @@ use rustc_borrowck::consumers::{BodyWithBorrowckFacts, ConsumerOptions};
 use rustc_data_structures::fx::FxHashSet as HashSet;
 use rustc_hir::def_id::LocalDefId;
 use rustc_middle::{
-  mir::{Body, BorrowCheckResult, MirPass, StatementKind, TerminatorKind},
+  mir::{Body, BorrowCheckResult, StatementKind, TerminatorKind},
   ty::TyCtxt,
   util::Providers,
 };
@@ -17,40 +17,34 @@ use crate::{block_timer, cache::Cache, BodyExt};
 ///
 /// This pass helps reduce the number of intermediates during dataflow analysis, which
 /// reduces memory usage.
-pub struct SimplifyMir;
-impl<'tcx> MirPass<'tcx> for SimplifyMir {
-  fn run_pass(&self, _tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
-    let return_blocks = body
-      .all_returns()
-      .filter_map(|loc| {
-        let bb = &body.basic_blocks[loc.block];
-        (bb.statements.len() == 0).then_some(loc.block)
-      })
-      .collect::<HashSet<_>>();
+pub fn simplify_mir(body: &mut Body<'_>) {
+  let return_blocks = body
+    .all_returns()
+    .filter_map(|loc| {
+      let bb = &body.basic_blocks[loc.block];
+      (bb.statements.len() == 0).then_some(loc.block)
+    })
+    .collect::<HashSet<_>>();
 
-    for block in body.basic_blocks_mut() {
-      block.statements.retain(|stmt| {
-        !matches!(
-          stmt.kind,
-          StatementKind::StorageLive(..) | StatementKind::StorageDead(..)
-        )
-      });
+  for block in body.basic_blocks_mut() {
+    block.statements.retain(|stmt| {
+      !matches!(
+        stmt.kind,
+        StatementKind::StorageLive(..) | StatementKind::StorageDead(..)
+      )
+    });
 
-      let terminator = block.terminator_mut();
-      terminator.kind = match terminator.kind {
-        TerminatorKind::FalseEdge { real_target, .. } => TerminatorKind::Goto {
-          target: real_target,
-        },
-        TerminatorKind::FalseUnwind { real_target, .. } => TerminatorKind::Goto {
-          target: real_target,
-        },
-        // Ensures that control dependencies can determine the independence of differnet
-        // return paths
-        TerminatorKind::Goto { target } if return_blocks.contains(&target) => {
-          TerminatorKind::Return
-        }
-        _ => continue,
+    let terminator = block.terminator_mut();
+    terminator.kind = match terminator.kind {
+      TerminatorKind::FalseEdge { real_target, .. } => TerminatorKind::Goto {
+        target: real_target,
+      },
+      // Ensures that control dependencies can determine the independence of differnet
+      // return paths
+      TerminatorKind::Goto { target } if return_blocks.contains(&target) => {
+        TerminatorKind::Return
       }
+      _ => continue,
     }
   }
 }
@@ -86,14 +80,14 @@ fn mir_borrowck(tcx: TyCtxt<'_>, def_id: LocalDefId) -> &BorrowCheckResult<'_> {
   );
 
   if SIMPLIFY_MIR.load(Ordering::SeqCst) {
-    SimplifyMir.run_pass(tcx, &mut body_with_facts.body);
+    simplify_mir(&mut body_with_facts.body);
   }
 
   // SAFETY: The reader casts the 'static lifetime to 'tcx before using it.
   let body_with_facts: BodyWithBorrowckFacts<'static> =
     unsafe { std::mem::transmute(body_with_facts) };
   MIR_BODIES.with(|cache| {
-    cache.get(def_id, |_| body_with_facts);
+    cache.get(&def_id, |_| body_with_facts);
   });
 
   let mut providers = Providers::default();
@@ -120,7 +114,7 @@ pub fn get_body_with_borrowck_facts<'tcx>(
 ) -> &'tcx BodyWithBorrowckFacts<'tcx> {
   let _ = tcx.mir_borrowck(def_id);
   MIR_BODIES.with(|cache| {
-    let body = cache.get(def_id, |_| panic!("mir_borrowck override should have stored body for item: {def_id:?}. Are you sure you registered borrowck_facts::override_queries?"));
+    let body = cache.get(&def_id, |_| panic!("mir_borrowck override should have stored body for item: {def_id:?}. Are you sure you registered borrowck_facts::override_queries?"));
     unsafe {
       std::mem::transmute::<
         &BodyWithBorrowckFacts<'static>,

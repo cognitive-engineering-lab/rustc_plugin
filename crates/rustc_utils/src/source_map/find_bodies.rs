@@ -74,7 +74,7 @@ mod test {
 
   #[test]
   fn test_find_bodies() {
-    let input = r#"
+    let input = r"
 // Ignore constants
 const C: usize = 0;
 
@@ -91,7 +91,7 @@ macro_rules! m {
 
 // Ignore macro-generated bodies
 m!{}
-"#;
+";
     test_utils::CompileBuilder::new(input).compile(|CompileResult { tcx }| {
       assert_eq!(find_bodies(tcx).len(), 3);
     });

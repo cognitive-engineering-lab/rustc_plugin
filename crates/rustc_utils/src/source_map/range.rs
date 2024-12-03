@@ -134,7 +134,7 @@ impl FilenameIndex {
           let filename = &ctx.filenames[self];
           let filename = filename.0
             .canonicalize()
-            .unwrap_or_else(|_| filename.0.to_path_buf());
+            .unwrap_or_else(|_| filename.0.clone());
           let rustc_filename = files
             .iter()
             .map(|file| &file.name)
@@ -226,7 +226,7 @@ impl ByteRange {
       let ctx = ctx.borrow();
       let mapping: &CharByteMapping = ctx
         .char_byte_mapping
-        .get(self.filename, |_| CharByteMapping::build(&file));
+        .get(&self.filename, |_| CharByteMapping::build(&file));
 
       let char_start = mapping.byte_to_char(self.start);
       let char_end = mapping.byte_to_char(self.end);
@@ -251,7 +251,7 @@ impl ByteRange {
       let ctx = ctx.borrow();
       let mapping = ctx
         .char_byte_mapping
-        .get(filename, |_| CharByteMapping::build(&file));
+        .get(&filename, |_| CharByteMapping::build(&file));
       let byte_start = mapping.char_to_byte(char_start);
       let byte_end = mapping.char_to_byte(char_end);
       Ok(ByteRange {
@@ -283,7 +283,8 @@ impl ByteRange {
       let external = file.external_src.borrow();
       let _src = file
         .src
-        .as_ref()
+        .as_deref()
+        .map(String::as_str)
         .unwrap_or_else(|| external.get_source().as_ref().unwrap());
 
       let byte_start = BytePos(span.lo().0 as usize);
@@ -317,8 +318,8 @@ pub trait ToSpan {
 impl ToSpan for ByteRange {
   fn to_span(&self, _tcx: TyCtxt) -> Result<Span> {
     Ok(Span::with_root_ctxt(
-      rustc_span::BytePos(self.start.0 as u32),
-      rustc_span::BytePos(self.end.0 as u32),
+      rustc_span::BytePos(u32::try_from(self.start.0).unwrap()),
+      rustc_span::BytePos(u32::try_from(self.end.0).unwrap()),
     ))
   }
 }

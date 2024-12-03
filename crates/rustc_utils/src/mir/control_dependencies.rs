@@ -8,9 +8,12 @@
 
 use std::fmt;
 
-use rustc_data_structures::graph::{dominators::Dominators, vec_graph::VecGraph, *};
+use rustc_data_structures::graph::{
+  dominators, dominators::Dominators, iterate, vec_graph::VecGraph, ControlFlowGraph,
+  DirectedGraph, Predecessors, StartNode, Successors,
+};
 use rustc_index::{
-  bit_set::{BitSet, HybridBitSet, SparseBitMatrix},
+  bit_set::{BitSet, ChunkedBitSet, SparseBitMatrix},
   Idx,
 };
 use smallvec::SmallVec;
@@ -191,7 +194,7 @@ impl<Node: Idx + Ord> ControlDependencies<Node> {
   }
 
   /// Returns the set of all node that are control-dependent on the given `node`.
-  pub fn dependent_on(&self, node: Node) -> Option<&HybridBitSet<Node>> {
+  pub fn dependent_on(&self, node: Node) -> Option<&ChunkedBitSet<Node>> {
     self.0.row(node)
   }
 }
@@ -207,14 +210,14 @@ mod test {
 
   #[test]
   fn test_control_dependencies() {
-    let input = r#"
-    fn main() {
-      let mut x = 1;
-      x = 2;
-      if true { x = 3; }
-      for _ in 0 .. 1 { x = 4; }
-      x = 5;
-    }"#;
+    let input = r"
+fn main() {
+  let mut x = 1;
+  x = 2;
+  if true { x = 3; }
+  for _ in 0 .. 1 { x = 4; }
+  x = 5;
+}";
     test_utils::compile_body(input, move |tcx, _, body_with_facts| {
       let body = &body_with_facts.body;
       let control_deps = body.control_dependencies();

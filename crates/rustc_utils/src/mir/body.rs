@@ -7,10 +7,14 @@ use std::{
 };
 
 use anyhow::{ensure, Result};
-use rustc_data_structures::{captures::Captures, fx::FxHashMap as HashMap};
+use pretty::PrettyPrintMirOptions;
+use rustc_data_structures::fx::FxHashMap as HashMap;
 use rustc_hir::{def_id::DefId, CoroutineDesugaring, CoroutineKind, HirId};
 use rustc_middle::{
-  mir::{pretty::write_mir_fn, *},
+  mir::{
+    pretty, pretty::write_mir_fn, BasicBlock, Body, Local, Location, Place, SourceInfo,
+    TerminatorKind, VarDebugInfoContents,
+  },
   ty::{Region, Ty, TyCtxt},
 };
 use smallvec::SmallVec;
@@ -20,24 +24,14 @@ use crate::{PlaceExt, TyExt};
 
 /// Extension trait for [`Body`].
 pub trait BodyExt<'tcx> {
-  type AllReturnsIter<'a>: Iterator<Item = Location>
-  where
-    Self: 'a;
-
   /// Returns an iterator over the locations of [`TerminatorKind::Return`] instructions in a body.
-  fn all_returns(&self) -> Self::AllReturnsIter<'_>;
-
-  type AllLocationsIter<'a>: Iterator<Item = Location>
-  where
-    Self: 'a;
+  fn all_returns(&self) -> impl Iterator<Item = Location> + '_;
 
   /// Returns an iterator over all the locations in a body.
-  fn all_locations(&self) -> Self::AllLocationsIter<'_>;
-
-  type LocationsIter: Iterator<Item = Location>;
+  fn all_locations(&self) -> impl Iterator<Item = Location> + '_;
 
   /// Returns all the locations in a [`BasicBlock`].
-  fn locations_in_block(&self, block: BasicBlock) -> Self::LocationsIter;
+  fn locations_in_block(&self, block: BasicBlock) -> impl Iterator<Item = Location>;
 
   /// Returns a mapping from source-level variable names to [`Local`]s.
   fn debug_info_name_map(&self) -> HashMap<String, Local>;
@@ -63,29 +57,22 @@ pub trait BodyExt<'tcx> {
   /// locals across await calls.
   fn async_context(&self, tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<Ty<'tcx>>;
 
-  type PlacesIter<'a>: Iterator<Item = Place<'tcx>>
-  where
-    Self: 'a;
-
   /// Returns an iterator over all projections of all local variables in the body.
-  fn all_places(&self, tcx: TyCtxt<'tcx>, def_id: DefId) -> Self::PlacesIter<'_>;
-
-  type ArgRegionsIter<'a>: Iterator<Item = Region<'tcx>>
-  where
-    Self: 'a;
+  fn all_places(
+    &self,
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+  ) -> impl Iterator<Item = Place<'tcx>> + '_;
 
   /// Returns an iterator over all the regions that appear in argument types to the body.
-  fn regions_in_args(&self) -> Self::ArgRegionsIter<'_>;
-
-  type ReturnRegionsIter: Iterator<Item = Region<'tcx>>;
+  fn regions_in_args(&self) -> impl Iterator<Item = Region<'tcx>> + '_;
 
   /// Returns an iterator over all the regions that appear in the body's return type.
-  fn regions_in_return(&self) -> Self::ReturnRegionsIter;
+  fn regions_in_return(&self) -> impl Iterator<Item = Region<'tcx>> + '_;
 }
 
 impl<'tcx> BodyExt<'tcx> for Body<'tcx> {
-  type AllReturnsIter<'a> = impl Iterator<Item = Location> + Captures<'tcx> + 'a where Self: 'a;
-  fn all_returns(&self) -> Self::AllReturnsIter<'_> {
+  fn all_returns(&self) -> impl Iterator<Item = Location> + '_ {
     self
       .basic_blocks
       .iter_enumerated()
@@ -98,21 +85,19 @@ impl<'tcx> BodyExt<'tcx> for Body<'tcx> {
       })
   }
 
-  type AllLocationsIter<'a> = impl Iterator<Item = Location> + Captures<'tcx> + 'a where Self: 'a;
-  fn all_locations(&self) -> Self::AllLocationsIter<'_> {
+  fn all_locations(&self) -> impl Iterator<Item = Location> + '_ {
     self
       .basic_blocks
       .iter_enumerated()
       .flat_map(|(block, data)| {
-        (0 .. data.statements.len() + 1).map(move |statement_index| Location {
+        (0 ..= data.statements.len()).map(move |statement_index| Location {
           block,
           statement_index,
         })
       })
   }
 
-  type LocationsIter = impl Iterator<Item = Location>;
-  fn locations_in_block(&self, block: BasicBlock) -> Self::LocationsIter {
+  fn locations_in_block(&self, block: BasicBlock) -> impl Iterator<Item = Location> {
     let num_stmts = self.basic_blocks[block].statements.len();
     (0 ..= num_stmts).map(move |statement_index| Location {
       block,
@@ -133,7 +118,15 @@ impl<'tcx> BodyExt<'tcx> for Body<'tcx> {
 
   fn to_string(&self, tcx: TyCtxt<'tcx>) -> Result<String> {
     let mut buffer = Vec::new();
-    write_mir_fn(tcx, self, &mut |_, _| Ok(()), &mut buffer)?;
+    write_mir_fn(
+      tcx,
+      self,
+      &mut |_, _| Ok(()),
+      &mut buffer,
+      PrettyPrintMirOptions {
+        include_extra_comments: false,
+      },
+    )?;
     Ok(String::from_utf8(buffer)?)
   }
 
@@ -166,21 +159,13 @@ impl<'tcx> BodyExt<'tcx> for Body<'tcx> {
     }
   }
 
-  type ArgRegionsIter<'a> = impl Iterator<Item = Region<'tcx>> + Captures<'tcx> + 'a
-  where Self: 'a;
-
-  type ReturnRegionsIter = impl Iterator<Item = Region<'tcx>>;
-
-  type PlacesIter<'a> = impl Iterator<Item = Place<'tcx>> + Captures<'tcx> + 'a
-  where Self: 'a;
-
-  fn regions_in_args(&self) -> Self::ArgRegionsIter<'_> {
+  fn regions_in_args(&self) -> impl Iterator<Item = Region<'tcx>> + '_ {
     self
       .args_iter()
       .flat_map(|arg_local| self.local_decls[arg_local].ty.inner_regions())
   }
 
-  fn regions_in_return(&self) -> Self::ReturnRegionsIter {
+  fn regions_in_return(&self) -> impl Iterator<Item = Region<'tcx>> + '_ {
     self
       .return_ty()
       .inner_regions()
@@ -188,20 +173,24 @@ impl<'tcx> BodyExt<'tcx> for Body<'tcx> {
       .into_iter()
   }
 
-  fn all_places(&self, tcx: TyCtxt<'tcx>, def_id: DefId) -> Self::PlacesIter<'_> {
+  fn all_places(
+    &self,
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+  ) -> impl Iterator<Item = Place<'tcx>> + '_ {
     self.local_decls.indices().flat_map(move |local| {
       Place::from_local(local, tcx).interior_paths(tcx, self, def_id)
     })
   }
 }
 
-pub fn run_dot(path: &Path, buf: Vec<u8>) -> Result<()> {
+pub fn run_dot(path: &Path, buf: &[u8]) -> Result<()> {
   let mut p = Command::new("dot")
     .args(["-Tpdf", "-o", &path.display().to_string()])
     .stdin(Stdio::piped())
     .spawn()?;
 
-  p.stdin.as_mut().unwrap().write_all(&buf)?;
+  p.stdin.as_mut().unwrap().write_all(buf)?;
 
   let status = p.wait()?;
   ensure!(status.success(), "dot for {} failed", path.display());
@@ -216,14 +205,14 @@ mod test {
 
   #[test]
   fn test_body_ext() {
-    let input = r#"
-    fn foobar<'a>(x: &'a i32, y: &'a i32) -> &'a i32 {
-      if *x > 0 {
-        return x;
-      }
+    let input = r"
+fn foobar<'a>(x: &'a i32, y: &'a i32) -> &'a i32 {
+  if *x > 0 {
+    return x;
+  }
 
-      y
-    }"#;
+  y
+}";
 
     test_utils::compile_body(input, |_, _, body| {
       let body = &body.body;

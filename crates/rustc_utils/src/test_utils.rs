@@ -111,7 +111,7 @@ impl CompileBuilder {
       &*SYSROOT,
     ]
     .into_iter()
-    .map(|s| s.to_owned())
+    .map(str::to_owned)
     .chain(self.arguments.iter().cloned())
     .collect::<Box<_>>();
 
@@ -134,8 +134,8 @@ pub fn compile_body(
 ) {
   CompileBuilder::new(input).compile(|result| {
     let (body_id, body_with_facts) = result.as_body();
-    callback(result.tcx, body_id, body_with_facts)
-  })
+    callback(result.tcx, body_id, body_with_facts);
+  });
 }
 
 /// State during the rust compilation. Most of the time you only care about
@@ -152,11 +152,10 @@ impl<'tcx> CompileResult<'tcx> {
     let hir = tcx.hir();
     let body_id = hir
       .items()
-      .filter_map(|id| match hir.item(id).kind {
+      .find_map(|id| match hir.item(id).kind {
         ItemKind::Fn(_, _, body) => Some(body),
         _ => None,
       })
-      .next()
       .unwrap();
 
     let def_id = tcx.hir().body_owner_def_id(body_id);
@@ -169,7 +168,7 @@ impl<'tcx> CompileResult<'tcx> {
   pub fn as_body_with_range(
     &self,
     target: ByteRange,
-  ) -> (BodyId, &'tcx BodyWithBorrowckFacts) {
+  ) -> (BodyId, &'tcx BodyWithBorrowckFacts<'tcx>) {
     let tcx = self.tcx;
     let body_id = find_enclosing_bodies(tcx, target.to_span(tcx).unwrap())
       .next()
@@ -269,7 +268,7 @@ pub fn parse_ranges(
   Ok((prog_clean, ranges))
 }
 
-pub fn color_ranges(prog: &str, all_ranges: Vec<(&str, &HashSet<ByteRange>)>) -> String {
+pub fn color_ranges(prog: &str, all_ranges: &[(&str, &HashSet<ByteRange>)]) -> String {
   let mut new_tokens = all_ranges
     .iter()
     .flat_map(|(_, ranges)| {
@@ -284,7 +283,7 @@ pub fn color_ranges(prog: &str, all_ranges: Vec<(&str, &HashSet<ByteRange>)>) ->
       })
     })
     .collect::<Vec<_>>();
-  new_tokens.sort_by_key(|(_, i)| -(i.0 as isize));
+  new_tokens.sort_by_key(|(_, i)| -(isize::try_from(i.0).unwrap()));
 
   let mut output = prog.to_owned();
   for (s, i) in new_tokens {
@@ -295,21 +294,21 @@ pub fn color_ranges(prog: &str, all_ranges: Vec<(&str, &HashSet<ByteRange>)>) ->
 }
 
 pub fn fmt_ranges(prog: &str, s: &HashSet<ByteRange>) -> String {
-  textwrap::indent(&color_ranges(prog, vec![("", s)]), "  ")
+  textwrap::indent(&color_ranges(prog, &[("", s)]), "  ")
 }
 
 pub fn compare_ranges(
-  expected: HashSet<ByteRange>,
-  actual: HashSet<ByteRange>,
+  expected: &HashSet<ByteRange>,
+  actual: &HashSet<ByteRange>,
   prog: &str,
 ) {
-  let missing = &expected - &actual;
-  let extra = &actual - &expected;
+  let missing = expected - actual;
+  let extra = actual - expected;
 
   let check = |s: HashSet<ByteRange>, message: &str| {
     if s.len() > 0 {
-      println!("Expected ranges:\n{}", fmt_ranges(prog, &expected));
-      println!("Actual ranges:\n{}", fmt_ranges(prog, &actual));
+      println!("Expected ranges:\n{}", fmt_ranges(prog, expected));
+      println!("Actual ranges:\n{}", fmt_ranges(prog, actual));
       panic!("{message} ranges:\n{}", fmt_ranges(prog, &s));
     }
   };
@@ -350,7 +349,7 @@ pub struct PlaceBuilder<'a, 'tcx> {
   place: Place<'tcx>,
 }
 
-impl<'a, 'tcx> PlaceBuilder<'a, 'tcx> {
+impl<'tcx> PlaceBuilder<'_, 'tcx> {
   pub fn field(mut self, i: usize) -> Self {
     let f = FieldIdx::from_usize(i);
     let ty = self
@@ -436,7 +435,7 @@ mod test {
           end: BytePos(3),
           filename: *filename,
         },
-      ])
+      ]);
     });
   }
 }
