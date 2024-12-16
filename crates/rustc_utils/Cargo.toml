@@ -1,6 +1,6 @@
 [package]
 name = "rustc_utils"
-version = "0.11.0-nightly-2024-12-01"
+version = "0.12.0-nightly-2024-12-15"
 edition = "2021"
 authors = ["Will Crichton <crichton.will@gmail.com>"]
 description = "Utilities for working with the Rust compiler"
