@@ -13,7 +13,7 @@ use rustc_data_structures::graph::{
   DirectedGraph, Predecessors, StartNode, Successors,
 };
 use rustc_index::{
-  bit_set::{BitSet, ChunkedBitSet, SparseBitMatrix},
+  bit_set::{BitSet, SparseBitMatrix},
   Idx,
 };
 use smallvec::SmallVec;
@@ -194,7 +194,7 @@ impl<Node: Idx + Ord> ControlDependencies<Node> {
   }
 
   /// Returns the set of all node that are control-dependent on the given `node`.
-  pub fn dependent_on(&self, node: Node) -> Option<&ChunkedBitSet<Node>> {
+  pub fn dependent_on(&self, node: Node) -> Option<&BitSet<Node>> {
     self.0.row(node)
   }
 }

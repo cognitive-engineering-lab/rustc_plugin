@@ -4,14 +4,14 @@
 [![docs](https://img.shields.io/badge/docs-built-blue)][docs]
 
 
-`rustc_plugin` is a framework for writing programs that use the Rust compiler API. We wrote `rustc_plugin` to support our research on experimental Rust tools like [Flowistry] and [Aquascope]. `rustc_plugin` is a kind of generalized version of the infrastructure in [Clippy].
+`rustc_plugin` is a framework for writing programs that use the Rust compiler API. We wrote `rustc_plugin` to support our research on experimental Rust tools like [Flowistry], [Aquascope], [Paralegal], and [Argus]. `rustc_plugin` provides a kind of generalized version of the Cargo integration infrastructure in [Clippy], along with a miscellany of utilities in the `rustc_utils` crate.
 
 ## Installation
 
 The Rust compiler's interface is not stable, so the only sensible way to develop a Rust compiler plugin is by pinning to a specific nightly. Each version of `rustc_plugin` is pinned to one nightly, and you *have* to use the same nightly version that we do. Therefore each release of `rustc_plugin` has a semantic version number (e.g. `0.1.0`) and the nightly version is added as a prerelease label (e.g. `-nightly-2023-08-25`). You can add a dependency to your `Cargo.toml` like this:
  
 ```toml
-rustc_plugin = "=0.11.0-nightly-2024-12-01"
+rustc_plugin = "=0.12.0-nightly-2024-12-15"
 ```
 
 We will treat a change to the nightly version as a breaking change, so the semantic version will be correspondingly updated as a breaking update.
@@ -44,6 +44,7 @@ The `rustc_plugin` framework is responsible for marshalling arguments from the t
 
 Normally, Rust libraries have a [minimum supported Rust version][msrv] because they promise to not use any breaking features implemented after that version. Rust compiler plugins are the opposite &mdash; they have a **maximum** supported Rust version (MaxSRV). A compiler plugin cannot analyze programs that use features implemented after the release date of the plugin's toolchain. The MaxSRV for every version of `rustc_plugin` is listed below:
 
+* v0.12 (`nightly-2024-12-15`) - rustc 1.84
 * v0.11 (`nightly-2024-12-01`) - rustc 1.84
 * v0.10 (`nightly-2024-05-20`) - rustc 1.79
 * v0.9 (`nightly-2024-01-24`) - rustc 1.76
@@ -54,9 +55,10 @@ Normally, Rust libraries have a [minimum supported Rust version][msrv] because t
 
 [Flowistry]: https://github.com/willcrichton/flowistry/
 [Aquascope]: https://github.com/cognitive-engineering-lab/aquascope
+[Paralegal]: https://github.com/brownsys/paralegal
+[Argus]: https://github.com/cognitive-engineering-lab/argus
 [Clippy]: https://github.com/rust-lang/rust-clippy
 [example]: https://github.com/cognitive-engineering-lab/rustc_plugin/tree/main/crates/rustc_plugin/examples/print-all-items
 [docs]: https://cognitive-engineering-lab.github.io/rustc_plugin/v0.11.0-nightly-2024-12-01/rustc_plugin/
 [docs-utils]: https://cognitive-engineering-lab.github.io/rustc_plugin/v0.11.0-nightly-2024-12-01/rustc_utils/
 [msrv]: https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field
-
