@@ -51,7 +51,7 @@ impl<'tcx> TyExt<'tcx> for Ty<'tcx> {
 
   fn is_copyable(self, tcx: TyCtxt<'tcx>, typing_env: TypingEnv<'tcx>) -> bool {
     let ty = tcx.erase_regions(self);
-    ty.is_copy_modulo_regions(tcx, typing_env)
+    tcx.type_is_copy_modulo_regions(typing_env, ty)
   }
 }
 

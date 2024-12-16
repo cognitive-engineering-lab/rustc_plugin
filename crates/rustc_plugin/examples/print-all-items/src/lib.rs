@@ -63,7 +63,8 @@ impl RustcPlugin for PrintAllItemsPlugin {
   ) -> rustc_interface::interface::Result<()> {
     let mut callbacks = PrintAllItemsCallbacks { args: plugin_args };
     let compiler = rustc_driver::RunCompiler::new(&compiler_args, &mut callbacks);
-    compiler.run()
+    compiler.run();
+    Ok(())
   }
 }
 
@@ -75,10 +76,10 @@ impl rustc_driver::Callbacks for PrintAllItemsCallbacks {
   // At the top-level, the Rustc API uses an event-based interface for
   // accessing the compiler at different stages of compilation. In this callback,
   // all the type-checking has completed.
-  fn after_analysis<'tcx>(
+  fn after_analysis(
     &mut self,
     _compiler: &rustc_interface::interface::Compiler,
-    tcx: TyCtxt<'tcx>,
+    tcx: TyCtxt<'_>,
   ) -> rustc_driver::Compilation {
     // We call our top-level function with access to the type context `tcx` and the CLI arguments.
     print_all_items(tcx, &self.args);

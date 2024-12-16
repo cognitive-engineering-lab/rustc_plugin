@@ -118,9 +118,8 @@ impl CompileBuilder {
     rustc_driver::catch_fatal_errors(|| {
       let mut compiler = rustc_driver::RunCompiler::new(&args, &mut callbacks);
       compiler.set_file_loader(Some(Box::new(StringLoader(self.input.clone()))));
-      compiler.run()
+      compiler.run();
     })
-    .unwrap()
     .unwrap();
   }
 }
@@ -193,15 +192,13 @@ where
     config.override_queries = Some(borrowck_facts::override_queries);
   }
 
-  fn after_expansion<'tcx>(
+  fn after_analysis(
     &mut self,
     _compiler: &rustc_interface::interface::Compiler,
-    queries: &'tcx rustc_interface::Queries<'tcx>,
+    tcx: TyCtxt<'_>,
   ) -> rustc_driver::Compilation {
-    queries.global_ctxt().unwrap().enter(|tcx| {
-      let callback = self.callback.take().unwrap();
-      callback(tcx);
-    });
+    let callback = self.callback.take().unwrap();
+    callback(tcx);
     rustc_driver::Compilation::Stop
   }
 }
