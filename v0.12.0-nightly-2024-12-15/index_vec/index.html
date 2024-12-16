@@ -1,0 +1,113 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="This crate helps with defining “newtype”-style wrappers around `usize` (or other integers), `Vec&#60;T&#62;`, and `[T]` so that some additional type safety can be gained at zero cost."><title>index_vec - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-46132b98.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="index_vec" data-themes="" data-resource-suffix="" data-rustdoc-version="1.85.0-nightly (0aeaa5eb2 2024-12-14)" data-channel="nightly" data-search-js="search-92e6798f.js" data-settings-js="settings-0f613d39.js" ><script src="../static.files/storage-59e33391.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../index_vec/index.html">index_<wbr>vec</a><span class="version">0.1.4</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#example--overview" title="Example / Overview">Example / Overview</a></li><li><a href="#background" title="Background">Background</a></li><li><a href="#other-crates" title="Other crates">Other crates</a></li><li><a href="#faq" title="FAQ">FAQ</a><ul><li><a href="#wouldnt-define_index_type-be-better-as-a-proc-macro" title="Wouldn’t `define_index_type` be better as a proc macro?">Wouldn’t <code>define_index_type</code> be better as a proc macro?</a></li><li><a href="#does-define_index_type-do-too-much" title="Does `define_index_type` do too much?">Does <code>define_index_type</code> do too much?</a></li><li><a href="#the-syntax-for-the-options-in-define_index_type-is-terrible" title="The syntax for the options in `define_index_type` is terrible.">The syntax for the options in <code>define_index_type</code> is terrible.</a></li><li><a href="#does-it-support-no_std" title="Does it support no_std?">Does it support no_std?</a></li><li><a href="#does-it-support-serde" title="Does it support serde?">Does it support serde?</a></li><li><a href="#what-features-are-planned" title="What features are planned?">What features are planned?</a></li></ul></li></ul><h3><a href="#macros">Crate Items</a></h3><ul class="block"><li><a href="#macros" title="Macros">Macros</a></li><li><a href="#structs" title="Structs">Structs</a></li><li><a href="#traits" title="Traits">Traits</a></li><li><a href="#types" title="Type Aliases">Type Aliases</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Crate <span>index_vec</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/index_vec/lib.rs.html#1-847">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>This crate helps with defining “newtype”-style wrappers around <code>usize</code> (or
+other integers), <code>Vec&lt;T&gt;</code>, and <code>[T]</code> so that some additional type safety can
+be gained at zero cost.</p>
+<h3 id="example--overview"><a class="doc-anchor" href="#example--overview">§</a>Example / Overview</h3>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>index_vec::{IndexVec, IndexSlice, index_vec};
+
+<span class="macro">index_vec::define_index_type!</span> {
+    <span class="comment">// Define StrIdx to use only 32 bits internally (you can use usize, u16,
+    // and even u8).
+    </span><span class="kw">pub struct </span>StrIdx = u32;
+
+    <span class="comment">// The defaults are very reasonable, but this macro can let
+    // you customize things quite a bit:
+
+    // By default, creating a StrIdx would check an incoming `usize against
+    // `u32::max_value()`, as u32 is the wrapped index type. Lets imagine that
+    // StrIdx has to interface with an external system that uses signed ints.
+    // We can change the checking behavior to complain on i32::max_value()
+    // instead:
+    </span>MAX_INDEX = i32::max_value() <span class="kw">as </span>usize;
+
+    <span class="comment">// We can also disable checking all-together if we are more concerned with perf
+    // than any overflow problems, or even do so, but only for debug builds: Quite
+    // pointless here, but an okay example
+    </span>DISABLE_MAX_INDEX_CHECK = <span class="macro">cfg!</span>(not(debug_assertions));
+
+    <span class="comment">// And more too, see this macro's docs for more info.
+</span>}
+
+<span class="comment">// Create a vector which can be accessed using `StrIdx`s.
+</span><span class="kw">let </span><span class="kw-2">mut </span>strs: IndexVec&lt;StrIdx, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; = <span class="macro">index_vec!</span>[<span class="string">"strs"</span>, <span class="string">"bar"</span>, <span class="string">"baz"</span>];
+
+<span class="comment">// l is a `StrIdx`
+</span><span class="kw">let </span>l = strs.last_idx();
+<span class="macro">assert_eq!</span>(strs[l], <span class="string">"baz"</span>);
+
+<span class="kw">let </span>new_i = strs.push(<span class="string">"quux"</span>);
+<span class="macro">assert_eq!</span>(strs[new_i], <span class="string">"quux"</span>);
+
+<span class="comment">// The slice APIs are wrapped as well.
+</span><span class="kw">let </span>s: <span class="kw-2">&amp;</span>IndexSlice&lt;StrIdx, [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str]&gt; = <span class="kw-2">&amp;</span>strs[StrIdx::new(<span class="number">1</span>)..];
+<span class="macro">assert_eq!</span>(s[<span class="number">0</span>], <span class="string">"bar"</span>);
+
+<span class="comment">// Indices are mostly interoperable with `usize`, and support
+// a lot of what you might want to do to an index.
+
+// Comparison
+</span><span class="macro">assert_eq!</span>(StrIdx::new(<span class="number">0</span>), <span class="number">0usize</span>);
+
+<span class="comment">// Addition
+</span><span class="macro">assert_eq!</span>(StrIdx::new(<span class="number">0</span>) + <span class="number">1</span>, <span class="number">1usize</span>);
+
+<span class="comment">// Subtraction
+</span><span class="macro">assert_eq!</span>(StrIdx::new(<span class="number">1</span>) - <span class="number">1</span>, <span class="number">0usize</span>);
+
+<span class="comment">// Wrapping
+</span><span class="macro">assert_eq!</span>(StrIdx::new(<span class="number">5</span>) % strs.len(), <span class="number">1usize</span>);
+<span class="comment">// ...</span></code></pre></div>
+<h3 id="background"><a class="doc-anchor" href="#background">§</a>Background</h3>
+<p>The goal is to help with the pattern of using a <code>type FooIdx = usize</code> to
+access a <code>Vec&lt;Foo&gt;</code> with something that can statically prevent using a
+<code>FooIdx</code> in a <code>Vec&lt;Bar&gt;</code>. It’s most useful if you have a bunch of indices
+referring to different sorts of vectors.</p>
+<p>The code was originally based on <code>rustc</code>’s <code>IndexVec</code> code, however that has
+been almost entirely rewritten (except for the cases where it’s trivial,
+e.g. the Vec wrapper).</p>
+<h3 id="other-crates"><a class="doc-anchor" href="#other-crates">§</a>Other crates</h3>
+<p>The <a href="https://crates.io/crates/indexed_vec"><code>indexed_vec</code></a> crate predates
+this, and is a much closer copy of the code from <code>rustc</code>. Unfortunately,
+this means it does not compile on stable.</p>
+<p>If you’re looking for something further from a vec and closer to a map, you
+might find <a href="https://crates.io/crates/handy"><code>handy</code></a>,
+<a href="https://crates.io/crates/slotmap"><code>slotmap</code></a>, or
+<a href="https://crates.io/crates/slab"><code>slab</code></a> to be closer what you want.</p>
+<h3 id="faq"><a class="doc-anchor" href="#faq">§</a>FAQ</h3><h5 id="wouldnt-define_index_type-be-better-as-a-proc-macro"><a class="doc-anchor" href="#wouldnt-define_index_type-be-better-as-a-proc-macro">§</a>Wouldn’t <code>define_index_type</code> be better as a proc macro?</h5>
+<p>Probably. It’s not a proc macro because I tend to avoid them where possible
+due to wanting to minimize compile times. If the issues around proc-macro
+compile times are fixed, then I’ll revisit this.</p>
+<p>I also may eventually add a proc-macro feature which is not required, but
+avoids some of the grossness.</p>
+<h5 id="does-define_index_type-do-too-much"><a class="doc-anchor" href="#does-define_index_type-do-too-much">§</a>Does <code>define_index_type</code> do too much?</h5>
+<p>Possibly. It defines a type, implements a bunch of functions on it, and
+quite a few traits. That said, it’s intended to be a very painless journey
+from <code>Vec&lt;T&gt;</code> + <code>usize</code> to <code>IndexVec&lt;I, T&gt;</code>. If it left it up to the
+developer to do those things, it would be too annoying to be worth using.</p>
+<h5 id="the-syntax-for-the-options-in-define_index_type-is-terrible"><a class="doc-anchor" href="#the-syntax-for-the-options-in-define_index_type-is-terrible">§</a>The syntax for the options in <code>define_index_type</code> is terrible.</h5>
+<p>I’m open to suggestions.</p>
+<h5 id="does-it-support-no_std"><a class="doc-anchor" href="#does-it-support-no_std">§</a>Does it support no_std?</h5>
+<p>Yes, although it uses <code>extern crate alloc;</code>, of course.</p>
+<h5 id="does-it-support-serde"><a class="doc-anchor" href="#does-it-support-serde">§</a>Does it support serde?</h5>
+<p>Yes, but only if you turn on the <code>serde</code> feature.</p>
+<h5 id="what-features-are-planned"><a class="doc-anchor" href="#what-features-are-planned">§</a>What features are planned?</h5>
+<p>Planned is a bit strong but here are the things I would find useful.</p>
+<ul>
+<li>Support any remaining parts of the slice/vec api.</li>
+<li>Add typesafe wrappers for SmallVec/ArrayVec (behind a cargo <code>feature</code>, of
+course).</li>
+<li>Better syntax for the define_index_type macro (no concrete ideas).</li>
+<li>Allow the generated type to be a tuple struct, or use a specific field
+name.</li>
+<li>Allow use of indices for string types (the primary benefit here would
+probably be the ability to e.g. use u32 without too much pain rather than
+mixing up indices from different strings – but you never know!)</li>
+<li>Allow index types such as NonZeroU32 and such, if it can be done sanely.</li>
+<li>…</li>
+</ul>
+</div></details><h2 id="macros" class="section-header">Macros<a href="#macros" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="macro" href="macro.define_index_type.html" title="macro index_vec::define_index_type">define_<wbr>index_<wbr>type</a></div><div class="desc docblock-short">Generate the boilerplate for a newtyped index struct, for use with
+<code>IndexVec</code>.</div></li><li><div class="item-name"><a class="macro" href="macro.index_box.html" title="macro index_vec::index_box">index_<wbr>box</a></div><div class="desc docblock-short">A macro similar to the stdlib’s <code>vec![]</code>, but producing an
+<code>Box&lt;IndexSlice&lt;I, [T]&gt;&gt;</code> (That is, an <code>IndexBox&lt;I, [T]&gt;</code>).</div></li><li><div class="item-name"><a class="macro" href="macro.index_vec.html" title="macro index_vec::index_vec">index_<wbr>vec</a></div><div class="desc docblock-short">A macro equivalent to the stdlib’s <code>vec![]</code>, but producing an <code>IndexVec</code>.</div></li></ul><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="struct" href="struct.IndexSlice.html" title="struct index_vec::IndexSlice">Index<wbr>Slice</a></div><div class="desc docblock-short">A slice that only accepts indices of a specific type. Note that the intended
+usage is as <code>IndexSlice&lt;I, [T]&gt;</code>.</div></li><li><div class="item-name"><a class="struct" href="struct.IndexVec.html" title="struct index_vec::IndexVec">Index<wbr>Vec</a></div><div class="desc docblock-short">A Vec that only accepts indices of a specific type.</div></li></ul><h2 id="traits" class="section-header">Traits<a href="#traits" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="trait" href="trait.Idx.html" title="trait index_vec::Idx">Idx</a></div><div class="desc docblock-short">Represents a wrapped value convertable to and from a <code>usize</code>.</div></li><li><div class="item-name"><a class="trait" href="trait.IdxRangeBounds.html" title="trait index_vec::IdxRangeBounds">IdxRange<wbr>Bounds</a></div><div class="desc docblock-short">This trait to function in API signatures where <code>Vec&lt;T&gt;</code> or <code>[T]</code> use <code>R: RangeBounds&lt;usize&gt;</code>. There are blanket implementations for the basic range
+types in <code>core::ops</code> for all Idx types. e.g. <code>Range&lt;I: Idx&gt;</code>, <code>RangeFrom&lt;I: Idx&gt;</code>, <code>RangeTo&lt;I: Idx&gt;</code>, etc all implement it.</div></li><li><div class="item-name"><a class="trait" href="trait.IdxSliceIndex.html" title="trait index_vec::IdxSliceIndex">IdxSlice<wbr>Index</a></div><div class="desc docblock-short">This is the equivalent of the sealed <code>core::slice::SliceIndex</code> trait. It
+cannot be overridden from user, code nor should it normally need use
+directly (Outside of trait bounds, I guess).</div></li></ul><h2 id="types" class="section-header">Type Aliases<a href="#types" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="type" href="type.IndexBox.html" title="type index_vec::IndexBox">Index<wbr>Box</a></div><div class="desc docblock-short"><code>IndexBox&lt;I, [T]&gt;</code>: An alias for indexed boxed slice.</div></li></ul><script type="text/json" id="notable-traits-data">{"Map<Self, F>":"<h3>Notable traits for <code><a class=\"struct\" href=\"https://doc.rust-lang.org/nightly/core/iter/adapters/map/struct.Map.html\" title=\"struct core::iter::adapters::map::Map\">Map</a>&lt;I, F&gt;</code></h3><pre><code><div class=\"where\">impl&lt;B, I, F&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/iter/traits/iterator/trait.Iterator.html\" title=\"trait core::iter::traits::iterator::Iterator\">Iterator</a> for <a class=\"struct\" href=\"https://doc.rust-lang.org/nightly/core/iter/adapters/map/struct.Map.html\" title=\"struct core::iter::adapters::map::Map\">Map</a>&lt;I, F&gt;<div class=\"where\">where\n    I: <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/iter/traits/iterator/trait.Iterator.html\" title=\"trait core::iter::traits::iterator::Iterator\">Iterator</a>,\n    F: <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/ops/function/trait.FnMut.html\" title=\"trait core::ops::function::FnMut\">FnMut</a>(&lt;I as <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/iter/traits/iterator/trait.Iterator.html\" title=\"trait core::iter::traits::iterator::Iterator\">Iterator</a>&gt;::<a class=\"associatedtype\" href=\"https://doc.rust-lang.org/nightly/core/iter/traits/iterator/trait.Iterator.html#associatedtype.Item\" title=\"type core::iter::traits::iterator::Iterator::Item\">Item</a>) -&gt; B,</div></div><div class=\"where\">    type <a href=\"https://doc.rust-lang.org/nightly/core/iter/traits/iterator/trait.Iterator.html#associatedtype.Item\" class=\"associatedtype\">Item</a> = B;</div>"}</script></section></div></main></body></html>
