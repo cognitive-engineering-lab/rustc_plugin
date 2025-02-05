@@ -62,8 +62,7 @@ impl RustcPlugin for PrintAllItemsPlugin {
     plugin_args: Self::Args,
   ) -> rustc_interface::interface::Result<()> {
     let mut callbacks = PrintAllItemsCallbacks { args: plugin_args };
-    let compiler = rustc_driver::RunCompiler::new(&compiler_args, &mut callbacks);
-    compiler.run();
+    rustc_driver::run_compiler(&compiler_args, &mut callbacks);
     Ok(())
   }
 }

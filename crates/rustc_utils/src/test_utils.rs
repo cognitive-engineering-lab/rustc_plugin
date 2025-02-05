@@ -95,6 +95,7 @@ impl CompileBuilder {
   pub fn compile(&self, f: impl for<'tcx> FnOnce(CompileResult<'tcx>) + Send) {
     let mut callbacks = TestCallbacks {
       callback: Some(move |tcx: TyCtxt<'_>| f(CompileResult { tcx })),
+      file_loader: Some(StringLoader(self.input.clone())),
     };
     let args = [
       "rustc",
@@ -116,9 +117,7 @@ impl CompileBuilder {
     .collect::<Box<_>>();
 
     rustc_driver::catch_fatal_errors(|| {
-      let mut compiler = rustc_driver::RunCompiler::new(&args, &mut callbacks);
-      compiler.set_file_loader(Some(Box::new(StringLoader(self.input.clone()))));
-      compiler.run();
+      rustc_driver::run_compiler(&args, &mut callbacks);
     })
     .unwrap();
   }
@@ -152,7 +151,7 @@ impl<'tcx> CompileResult<'tcx> {
     let body_id = hir
       .items()
       .find_map(|id| match hir.item(id).kind {
-        ItemKind::Fn(_, _, body) => Some(body),
+        ItemKind::Fn { body, .. } => Some(body),
         _ => None,
       })
       .unwrap();
@@ -180,16 +179,22 @@ impl<'tcx> CompileResult<'tcx> {
   }
 }
 
-struct TestCallbacks<Cb> {
+struct TestCallbacks<Cb, Fl> {
   callback: Option<Cb>,
+  file_loader: Option<Fl>,
 }
 
-impl<Cb> rustc_driver::Callbacks for TestCallbacks<Cb>
+impl<Cb, Fl> rustc_driver::Callbacks for TestCallbacks<Cb, Fl>
 where
   Cb: FnOnce(TyCtxt<'_>),
+  Fl: FileLoader + Send + Sync + 'static,
 {
   fn config(&mut self, config: &mut rustc_interface::Config) {
     config.override_queries = Some(borrowck_facts::override_queries);
+    config.file_loader = self
+      .file_loader
+      .take()
+      .map(|fl| Box::new(fl) as Box<(dyn FileLoader + Send + Sync)>);
   }
 
   fn after_analysis(

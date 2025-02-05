@@ -1,6 +1,7 @@
 use std::{env, fs, path::Path, process::Command, sync::Once};
 
 use anyhow::{ensure, Context, Result};
+use serial_test::serial;
 
 static SETUP: Once = Once::new();
 
@@ -57,6 +58,7 @@ fn run(dir: &str, f: impl FnOnce(&mut Command)) -> Result<String> {
 // TODO: why do these tests need to be run sequentially?
 
 #[test]
+#[serial]
 fn basic() -> Result<()> {
   let output = run("workspaces/basic", |_cmd| {})?;
   assert!(output.contains(r#"There is an item "add" of type "function""#));
@@ -64,6 +66,7 @@ fn basic() -> Result<()> {
 }
 
 #[test]
+#[serial]
 fn arg() -> Result<()> {
   let output = run("workspaces/basic", |cmd| {
     cmd.arg("-a");
@@ -73,6 +76,7 @@ fn arg() -> Result<()> {
 }
 
 #[test]
+#[serial]
 fn feature() -> Result<()> {
   let output = run("workspaces/basic", |cmd| {
     cmd.args(["--", "--features", "sub"]);
@@ -85,6 +89,7 @@ fn feature() -> Result<()> {
 }
 
 #[test]
+#[serial]
 fn multi() -> Result<()> {
   run("workspaces/multi", |_cmd| {})?;
   Ok(())

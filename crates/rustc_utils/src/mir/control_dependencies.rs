@@ -13,7 +13,7 @@ use rustc_data_structures::graph::{
   DirectedGraph, Predecessors, StartNode, Successors,
 };
 use rustc_index::{
-  bit_set::{BitSet, SparseBitMatrix},
+  bit_set::{DenseBitSet, SparseBitMatrix},
   Idx,
 };
 use smallvec::SmallVec;
@@ -21,7 +21,7 @@ use smallvec::SmallVec;
 struct ReversedGraph<'a, G: ControlFlowGraph> {
   graph: &'a G,
   exit: G::Node,
-  unreachable: BitSet<G::Node>,
+  unreachable: DenseBitSet<G::Node>,
 }
 
 impl<G: ControlFlowGraph> DirectedGraph for ReversedGraph<'_, G> {
@@ -76,7 +76,7 @@ impl<Node: Idx> PostDominators<Node> {
     let mut reversed = ReversedGraph {
       graph,
       exit,
-      unreachable: BitSet::new_empty(num_nodes),
+      unreachable: DenseBitSet::new_empty(num_nodes),
     };
 
     let reachable = iterate::post_order_from(&reversed, exit);
@@ -194,7 +194,7 @@ impl<Node: Idx + Ord> ControlDependencies<Node> {
   }
 
   /// Returns the set of all node that are control-dependent on the given `node`.
-  pub fn dependent_on(&self, node: Node) -> Option<&BitSet<Node>> {
+  pub fn dependent_on(&self, node: Node) -> Option<&DenseBitSet<Node>> {
     self.0.row(node)
   }
 }
