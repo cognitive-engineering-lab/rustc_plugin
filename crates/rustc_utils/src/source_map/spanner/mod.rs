@@ -35,10 +35,10 @@ pub struct Spanner<'tcx> {
 impl<'tcx> Spanner<'tcx> {
   pub fn new(tcx: TyCtxt<'tcx>, body_id: BodyId, body: &Body<'tcx>) -> Self {
     let hir = tcx.hir();
-    let hir_body = hir.body(body_id);
-    let owner = hir.body_owner(body_id);
+    let hir_body = tcx.hir_body(body_id);
+    let owner = tcx.hir_body_owner(body_id);
     let item_span = hir.span_with_body(owner);
-    let ret_span = hir.fn_decl_by_hir_id(owner).unwrap().output.span();
+    let ret_span = tcx.hir_fn_decl_by_hir_id(owner).unwrap().output.span();
 
     let mut spanner = Spanner {
       mir_spans: Vec::new(),
@@ -119,8 +119,7 @@ impl<'tcx> Spanner<'tcx> {
       hir_spans.extend(spans);
     }
 
-    let hir = self.tcx.hir();
-    let enclosing_hir = hir.parent_iter(hir_id).collect::<Vec<_>>();
+    let enclosing_hir = self.tcx.hir_parent_iter(hir_id).collect::<Vec<_>>();
     macro_rules! add_first_matching {
       ($p:pat) => {
         if let Some((id, _)) = enclosing_hir.iter().find(|(_, node)| matches!(node, $p)) {

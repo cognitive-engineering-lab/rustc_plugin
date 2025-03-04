@@ -3,6 +3,7 @@
 #![feature(rustc_private)]
 
 extern crate rustc_driver;
+extern crate rustc_hir;
 extern crate rustc_interface;
 extern crate rustc_middle;
 extern crate rustc_session;
@@ -10,6 +11,10 @@ extern crate rustc_session;
 use std::{borrow::Cow, env, process::Command};
 
 use clap::Parser;
+use rustc_hir::{
+  intravisit::{self, Visitor},
+  Item,
+};
 use rustc_middle::ty::TyCtxt;
 use rustc_plugin::{CrateFilter, RustcPlugin, RustcPluginArgs, Utf8Path};
 use serde::{Deserialize, Serialize};
@@ -61,15 +66,16 @@ impl RustcPlugin for PrintAllItemsPlugin {
     compiler_args: Vec<String>,
     plugin_args: Self::Args,
   ) -> rustc_interface::interface::Result<()> {
-    let mut callbacks = PrintAllItemsCallbacks { args: plugin_args };
-    let compiler = rustc_driver::RunCompiler::new(&compiler_args, &mut callbacks);
-    compiler.run();
+    let mut callbacks = PrintAllItemsCallbacks {
+      args: Some(plugin_args),
+    };
+    rustc_driver::run_compiler(&compiler_args, &mut callbacks);
     Ok(())
   }
 }
 
 struct PrintAllItemsCallbacks {
-  args: PrintAllItemsPluginArgs,
+  args: Option<PrintAllItemsPluginArgs>,
 }
 
 impl rustc_driver::Callbacks for PrintAllItemsCallbacks {
@@ -82,7 +88,7 @@ impl rustc_driver::Callbacks for PrintAllItemsCallbacks {
     tcx: TyCtxt<'_>,
   ) -> rustc_driver::Compilation {
     // We call our top-level function with access to the type context `tcx` and the CLI arguments.
-    print_all_items(tcx, &self.args);
+    print_all_items(tcx, self.args.take().unwrap());
 
     // Note that you should generally allow compilation to continue. If
     // your plugin is being invoked on a dependency, then you need to ensure
@@ -92,21 +98,29 @@ impl rustc_driver::Callbacks for PrintAllItemsCallbacks {
   }
 }
 
-// The core of our analysis. It doesn't do much, just access some methods on the `TyCtxt`.
+// The core of our analysis. Right now it just prints out a description of each item.
 // I recommend reading the Rustc Development Guide to better understand which compiler APIs
 // are relevant to whatever task you have.
-fn print_all_items(tcx: TyCtxt, args: &PrintAllItemsPluginArgs) {
-  let hir = tcx.hir();
-  for item_id in hir.items() {
-    let item = hir.item(item_id);
+fn print_all_items(tcx: TyCtxt, args: PrintAllItemsPluginArgs) {
+  tcx.hir_visit_all_item_likes_in_crate(&mut PrintVisitor { args });
+}
+
+struct PrintVisitor {
+  args: PrintAllItemsPluginArgs,
+}
+
+impl Visitor<'_> for PrintVisitor {
+  fn visit_item(&mut self, item: &Item) -> Self::Result {
     let mut msg = format!(
       "There is an item \"{}\" of type \"{}\"",
       item.ident,
       item.kind.descr()
     );
-    if args.allcaps {
+    if self.args.allcaps {
       msg = msg.to_uppercase();
     }
     println!("{msg}");
+
+    intravisit::walk_item(self, item)
   }
 }

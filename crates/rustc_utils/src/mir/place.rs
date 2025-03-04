@@ -3,6 +3,7 @@
 use std::{borrow::Cow, collections::VecDeque};
 
 use log::{trace, warn};
+use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_data_structures::fx::{FxHashMap as HashMap, FxHashSet as HashSet};
 use rustc_hir::def_id::DefId;
 use rustc_infer::infer::TyCtxtInferExt;
@@ -15,7 +16,6 @@ use rustc_middle::{
   traits::ObligationCause,
   ty::{self, AdtKind, Region, RegionKind, RegionVid, Ty, TyCtxt, TyKind, TypeVisitor},
 };
-use rustc_target::abi::{FieldIdx, VariantIdx};
 use rustc_trait_selection::traits::NormalizeExt;
 use rustc_type_ir::TypingMode;
 
@@ -556,7 +556,7 @@ impl<'tcx, Dispatcher: RegionVisitorDispatcher<'tcx>> TypeVisitor<TyCtxt<'tcx>>
       _ if ty.is_primitive_ty() => {}
 
       _ => warn!("unimplemented {ty:?} ({:?})", ty.kind()),
-    };
+    }
 
     // let inherent_impls = tcx.inherent_impls(self.def_id);
     // let traits = tcx.infer_ctxt().enter(|infcx| {
@@ -764,7 +764,7 @@ fn main() {
       body_with_facts: &BodyWithBorrowckFacts<'tcx>,
     ) {
       let body = &body_with_facts.body;
-      let def_id = tcx.hir().body_owner_def_id(body_id).to_def_id();
+      let def_id = tcx.hir_body_owner_def_id(body_id).to_def_id();
       let p = Placer::new(tcx, body);
 
       let y = p.local("y").mk();

@@ -1,29 +1,33 @@
 //! Running rustc and Flowistry in tests.
 
 use std::{
-  fmt::Debug, fs, hash::Hash, io, panic, path::Path, process::Command, sync::LazyLock,
+  fmt::Debug,
+  fs,
+  hash::Hash,
+  io, panic,
+  path::Path,
+  process::Command,
+  sync::{Arc, LazyLock},
 };
 
 use anyhow::{anyhow, ensure, Context, Result};
 use log::debug;
+use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_borrowck::consumers::BodyWithBorrowckFacts;
-use rustc_data_structures::{
-  fx::{FxHashMap as HashMap, FxHashSet as HashSet},
-  sync::Lrc,
-};
-use rustc_hir::{BodyId, ItemKind};
+use rustc_data_structures::fx::{FxHashMap as HashMap, FxHashSet as HashSet};
+use rustc_driver::run_compiler;
+use rustc_hir::BodyId;
 use rustc_middle::{
   mir::{Body, HasLocalDecls, Local, Place},
   ty::TyCtxt,
 };
 use rustc_span::source_map::FileLoader;
-use rustc_target::abi::{FieldIdx, VariantIdx};
 
 use crate::{
   mir::borrowck_facts,
   source_map::{
     filename::{Filename, FilenameIndex},
-    find_bodies::find_enclosing_bodies,
+    find_bodies::{find_bodies, find_enclosing_bodies},
     range::{BytePos, ByteRange, CharPos, CharRange, ToSpan},
   },
   BodyExt, PlaceExt,
@@ -39,7 +43,7 @@ impl FileLoader for StringLoader {
     Ok(self.0.clone())
   }
 
-  fn read_binary_file(&self, path: &Path) -> io::Result<Lrc<[u8]>> {
+  fn read_binary_file(&self, path: &Path) -> io::Result<Arc<[u8]>> {
     Ok(fs::read(path)?.into())
   }
 }
@@ -94,6 +98,7 @@ impl CompileBuilder {
   /// the provided closure
   pub fn compile(&self, f: impl for<'tcx> FnOnce(CompileResult<'tcx>) + Send) {
     let mut callbacks = TestCallbacks {
+      input: self.input.clone(),
       callback: Some(move |tcx: TyCtxt<'_>| f(CompileResult { tcx })),
     };
     let args = [
@@ -101,7 +106,7 @@ impl CompileBuilder {
       DUMMY_FILE_NAME,
       "--crate-type",
       "lib",
-      "--edition=2021",
+      "--edition=2024",
       "-Zidentify-regions",
       "-Zmir-opt-level=0",
       "-Zmaximal-hir-to-mir-coverage",
@@ -112,13 +117,11 @@ impl CompileBuilder {
     ]
     .into_iter()
     .map(str::to_owned)
-    .chain(self.arguments.iter().cloned())
+    .chain(self.arguments.clone())
     .collect::<Box<_>>();
 
     rustc_driver::catch_fatal_errors(|| {
-      let mut compiler = rustc_driver::RunCompiler::new(&args, &mut callbacks);
-      compiler.set_file_loader(Some(Box::new(StringLoader(self.input.clone()))));
-      compiler.run();
+      run_compiler(&args, &mut callbacks);
     })
     .unwrap();
   }
@@ -148,16 +151,8 @@ impl<'tcx> CompileResult<'tcx> {
   /// Assume that we compiled only one function and return that function's id and body.
   pub fn as_body(&self) -> (BodyId, &'tcx BodyWithBorrowckFacts<'tcx>) {
     let tcx = self.tcx;
-    let hir = tcx.hir();
-    let body_id = hir
-      .items()
-      .find_map(|id| match hir.item(id).kind {
-        ItemKind::Fn(_, _, body) => Some(body),
-        _ => None,
-      })
-      .unwrap();
-
-    let def_id = tcx.hir().body_owner_def_id(body_id);
+    let (_, body_id) = find_bodies(tcx).remove(0);
+    let def_id = tcx.hir_body_owner_def_id(body_id);
     let body_with_facts = borrowck_facts::get_body_with_borrowck_facts(tcx, def_id);
     debug!("{}", body_with_facts.body.to_string(tcx).unwrap());
     (body_id, body_with_facts)
@@ -172,7 +167,7 @@ impl<'tcx> CompileResult<'tcx> {
     let body_id = find_enclosing_bodies(tcx, target.to_span(tcx).unwrap())
       .next()
       .unwrap();
-    let def_id = tcx.hir().body_owner_def_id(body_id);
+    let def_id = tcx.hir_body_owner_def_id(body_id);
     let body_with_facts = borrowck_facts::get_body_with_borrowck_facts(tcx, def_id);
     debug!("{}", body_with_facts.body.to_string(tcx).unwrap());
 
@@ -181,6 +176,7 @@ impl<'tcx> CompileResult<'tcx> {
 }
 
 struct TestCallbacks<Cb> {
+  input: String,
   callback: Option<Cb>,
 }
 
@@ -190,6 +186,7 @@ where
 {
   fn config(&mut self, config: &mut rustc_interface::Config) {
     config.override_queries = Some(borrowck_facts::override_queries);
+    config.file_loader = Some(Box::new(StringLoader(self.input.clone())));
   }
 
   fn after_analysis(

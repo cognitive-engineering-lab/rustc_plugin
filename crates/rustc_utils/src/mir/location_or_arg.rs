@@ -42,22 +42,15 @@ impl From<Local> for LocationOrArg {
 
 #[cfg(feature = "indexical")]
 pub mod index {
-  use indexical::{
-    impls::RustcIndexSet, index_vec::define_index_type, IndexedDomain, IndexedValue,
-    ToIndex,
-  };
+  use indexical::{bitset::rustc::IndexSet, define_index_type, IndexedDomain, ToIndex};
 
   use super::*;
 
   define_index_type! {
-    pub struct LocationOrArgIndex = u32;
+    pub struct LocationOrArgIndex for LocationOrArg = u32;
   }
 
-  impl IndexedValue for LocationOrArg {
-    type Index = LocationOrArgIndex;
-  }
-
-  pub type LocationOrArgSet = RustcIndexSet<LocationOrArg>;
+  pub type LocationOrArgSet = IndexSet<LocationOrArg>;
   pub type LocationOrArgDomain = IndexedDomain<LocationOrArg>;
 
   pub struct CustomMarker;
