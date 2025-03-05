@@ -452,7 +452,7 @@ impl<'tcx, Dispatcher: RegionVisitorDispatcher<'tcx>> TypeVisitor<TyCtxt<'tcx>>
 {
   fn visit_ty(&mut self, ty: Ty<'tcx>) {
     let tcx = self.tcx;
-    if self.ty_stack.iter().any(|visited_ty| ty == *visited_ty) {
+    if self.ty_stack.contains(&ty) {
       return;
     }
 
