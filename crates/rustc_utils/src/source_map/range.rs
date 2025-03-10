@@ -1,10 +1,10 @@
 use std::{
   cell::RefCell, collections::hash_map::Entry, default::Default, ffi::OsStr,
-  path::PathBuf,
+  path::PathBuf, sync::Arc,
 };
 
 use anyhow::{bail, ensure, Context, Result};
-use rustc_data_structures::{fx::FxHashMap as HashMap, sync::Lrc};
+use rustc_data_structures::fx::FxHashMap as HashMap;
 use rustc_hir::{
   intravisit::{self, Visitor},
   BodyId,
@@ -96,7 +96,7 @@ impl CharByteMapping {
 #[derive(Default)]
 pub struct RangeContext {
   filenames: IndexVec<FilenameIndex, Filename>,
-  path_mapping: HashMap<FilenameIndex, Lrc<SourceFile>>,
+  path_mapping: HashMap<FilenameIndex, Arc<SourceFile>>,
   char_byte_mapping: Cache<FilenameIndex, CharByteMapping>,
 }
 
@@ -120,11 +120,11 @@ impl Filename {
 }
 
 impl FilenameIndex {
-  pub fn find_source_file(self, source_map: &SourceMap) -> Result<Lrc<SourceFile>> {
+  pub fn find_source_file(self, source_map: &SourceMap) -> Result<Arc<SourceFile>> {
     CONTEXT.with(|ctx| {
       let ctx = &mut *ctx.borrow_mut();
       match ctx.path_mapping.entry(self) {
-        Entry::Occupied(entry) => Ok(Lrc::clone(entry.get())),
+        Entry::Occupied(entry) => Ok(Arc::clone(entry.get())),
         Entry::Vacant(entry) => {
           let files = source_map.files();
           ensure!(
@@ -164,7 +164,7 @@ impl FilenameIndex {
               )
             })?;
           let file = source_map.get_source_file(rustc_filename).unwrap();
-          entry.insert(Lrc::clone(&file));
+          entry.insert(Arc::clone(&file));
           Ok(file)
         }
       }
@@ -345,9 +345,9 @@ fn qpath_to_span(tcx: TyCtxt, qpath: String) -> Result<Span> {
 
   impl<'tcx> Visitor<'tcx> for Finder<'tcx> {
     fn visit_nested_body(&mut self, id: BodyId) {
-      intravisit::walk_body(self, self.tcx.hir().body(id));
+      intravisit::walk_body(self, self.tcx.hir_body(id));
 
-      let local_def_id = self.tcx.hir().body_owner_def_id(id);
+      let local_def_id = self.tcx.hir_body_owner_def_id(id);
       let function_path = self
         .tcx
         .def_path(local_def_id.to_def_id())
@@ -363,7 +363,7 @@ fn qpath_to_span(tcx: TyCtxt, qpath: String) -> Result<Span> {
     qpath,
     span: None,
   };
-  tcx.hir().visit_all_item_likes_in_crate(&mut finder);
+  tcx.hir_visit_all_item_likes_in_crate(&mut finder);
   finder
     .span
     .with_context(|| format!("No function with qpath {}", finder.qpath))

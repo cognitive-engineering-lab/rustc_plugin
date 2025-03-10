@@ -152,7 +152,7 @@ pub fn driver_main<T: RustcPlugin>(plugin: T) {
       log::debug!("Running plugin...");
       let plugin_args: T::Args =
         serde_json::from_str(&env::var(PLUGIN_ARGS).unwrap()).unwrap();
-      plugin.run(args, plugin_args)
+      plugin.run(args, plugin_args).unwrap();
     } else {
       log::debug!(
         "Running normal Rust. Relevant variables:\
@@ -161,8 +161,7 @@ run_on_all_crates={run_on_all_crates}, \
 primary_package={primary_package}, \
 is_target_crate={is_target_crate}"
       );
-      rustc_driver::RunCompiler::new(&args, &mut DefaultCallbacks).run();
-      Ok(())
+      rustc_driver::run_compiler(&args, &mut DefaultCallbacks);
     }
   }))
 }

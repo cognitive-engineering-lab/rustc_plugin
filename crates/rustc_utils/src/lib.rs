@@ -41,6 +41,7 @@
 )]
 
 extern crate either;
+extern crate rustc_abi;
 extern crate rustc_borrowck;
 extern crate rustc_data_structures;
 extern crate rustc_driver;
@@ -50,6 +51,7 @@ extern crate rustc_hir;
 extern crate rustc_index;
 extern crate rustc_infer;
 extern crate rustc_interface;
+extern crate rustc_lint_defs;
 extern crate rustc_macros;
 extern crate rustc_middle;
 extern crate rustc_mir_dataflow;

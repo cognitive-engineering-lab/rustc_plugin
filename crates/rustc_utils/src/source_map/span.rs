@@ -74,7 +74,7 @@ impl SpanExt for Span {
       }
     } else {
       outer_spans.push(*self);
-    };
+    }
 
     trace!("outer span for {self:?} with inner spans {child_spans:?} is {outer_spans:?}");
 

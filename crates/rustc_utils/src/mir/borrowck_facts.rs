@@ -108,17 +108,17 @@ fn mir_borrowck(tcx: TyCtxt<'_>, def_id: LocalDefId) -> &BorrowCheckResult<'_> {
 /// Note that as of May 2022, Polonius can be *very* slow for large functions.
 /// It may take up to 30 seconds to analyze a single body with a large CFG.
 #[allow(clippy::needless_lifetimes)]
-pub fn get_body_with_borrowck_facts<'tcx>(
-  tcx: TyCtxt<'tcx>,
+pub fn get_body_with_borrowck_facts(
+  tcx: TyCtxt<'_>,
   def_id: LocalDefId,
-) -> &'tcx BodyWithBorrowckFacts<'tcx> {
+) -> &BodyWithBorrowckFacts<'_> {
   let _ = tcx.mir_borrowck(def_id);
   MIR_BODIES.with(|cache| {
     let body = cache.get(&def_id, |_| panic!("mir_borrowck override should have stored body for item: {def_id:?}. Are you sure you registered borrowck_facts::override_queries?"));
     unsafe {
       std::mem::transmute::<
         &BodyWithBorrowckFacts<'static>,
-        &'tcx BodyWithBorrowckFacts<'tcx>,
+        &BodyWithBorrowckFacts<'_>,
       >(body)
     }
   })
