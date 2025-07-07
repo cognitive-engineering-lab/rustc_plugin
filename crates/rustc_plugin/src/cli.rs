@@ -168,9 +168,13 @@ fn only_run_on_file(
   // Add compile filter to specify the target corresponding to the given file
   cmd.arg("-p").arg(format!("{}:{}", pkg.name, pkg.version));
 
+  // See https://doc.rust-lang.org/cargo/commands/cargo-check.html#target-selection for possible compile kinds
   enum CompileKind {
     Lib,
     Bin,
+    Example,
+    Test,
+    Bench,
     ProcMacro,
   }
 
@@ -181,6 +185,9 @@ fn only_run_on_file(
     "lib" | "rlib" | "dylib" | "staticlib" | "cdylib" => CompileKind::Lib,
     "bin" => CompileKind::Bin,
     "proc-macro" => CompileKind::ProcMacro,
+    "example" => CompileKind::Example,
+    "test" => CompileKind::Test,
+    "bench" => CompileKind::Bench,
     _ => unreachable!("unexpected cargo crate type: {kind_str}"),
   };
 
@@ -207,10 +214,37 @@ fn only_run_on_file(
       cmd.args(["--bin", &target.name]);
     }
     CompileKind::ProcMacro => {}
+    CompileKind::Example => {
+      cmd.args(["--example", &target.name]);
+    }
+    CompileKind::Test => {
+      cmd.args(["--test", &target.name]);
+    }
+    CompileKind::Bench => {
+      cmd.args(["--bench", &target.name]);
+    }
   }
 
-  cmd.env(SPECIFIC_CRATE, pkg.name.replace('-', "_"));
-  cmd.env(SPECIFIC_TARGET, kind_str);
+  cmd.env(
+    SPECIFIC_CRATE,
+    match kind {
+      CompileKind::Lib => &pkg.name,
+      CompileKind::Bin => &pkg.name,
+      CompileKind::Example => &target.name,
+      CompileKind::Test => &target.name,
+      CompileKind::Bench => &target.name,
+      CompileKind::ProcMacro => &pkg.name,
+    }
+    .replace('-', "_"),
+  );
+  cmd.env(
+    SPECIFIC_TARGET,
+    if matches!(kind, CompileKind::Bench | CompileKind::Example) {
+      "bin"
+    } else {
+      kind_str
+    },
+  );
 
   log::debug!(
     "Package: {}, target kind {}, target name {}",

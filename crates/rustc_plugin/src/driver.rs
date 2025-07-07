@@ -138,13 +138,7 @@ pub fn driver_main<T: RustcPlugin>(plugin: T) {
     let primary_package = env::var("CARGO_PRIMARY_PACKAGE").is_ok();
     let run_on_all_crates = env::var(RUN_ON_ALL_CRATES).is_ok();
     let normal_rustc = arg_value(&args, "--print", |_| true).is_some();
-    let is_target_crate = match (env::var(SPECIFIC_CRATE), env::var(SPECIFIC_TARGET)) {
-      (Ok(krate), Ok(target)) => {
-        arg_value(&args, "--crate-name", |name| name == krate).is_some()
-          && arg_value(&args, "--crate-type", |name| name == target).is_some()
-      }
-      _ => true,
-    };
+    let is_target_crate = is_target_crate(&args);
     let run_plugin =
       !normal_rustc && (run_on_all_crates || primary_package) && is_target_crate;
 
@@ -164,4 +158,15 @@ is_target_crate={is_target_crate}"
       rustc_driver::run_compiler(&args, &mut DefaultCallbacks);
     }
   }))
+}
+
+fn is_target_crate(args: &[String]) -> bool {
+  match (env::var(SPECIFIC_CRATE), env::var(SPECIFIC_TARGET)) {
+    (Ok(krate), Ok(target)) => {
+      arg_value(args, "--crate-name", |name| name == krate).is_some()
+        && (arg_value(args, "--crate-type", |_| true).is_none()  // integration test crate
+          || arg_value(args, "--crate-type", |name| name == target).is_some())
+    }
+    _ => true,
+  }
 }
