@@ -1,12 +1,12 @@
 use std::{
   env, fs,
   path::PathBuf,
-  process::{exit, Command, Stdio},
+  process::{Command, Stdio, exit},
 };
 
 use cargo_metadata::camino::Utf8Path;
 
-use super::plugin::{RustcPlugin, PLUGIN_ARGS};
+use super::plugin::{PLUGIN_ARGS, RustcPlugin};
 use crate::CrateFilter;
 
 pub const RUN_ON_ALL_CRATES: &str = "RUSTC_PLUGIN_ALL_TARGETS";
@@ -193,10 +193,10 @@ fn only_run_on_file(
         let prefix = format!("lib{}", pkg.name.replace('-', "_"));
         for entry in entries {
           let path = entry.unwrap().path();
-          if let Some(file_name) = path.file_name() {
-            if file_name.to_string_lossy().starts_with(&prefix) {
-              fs::remove_file(path).unwrap();
-            }
+          if let Some(file_name) = path.file_name()
+            && file_name.to_string_lossy().starts_with(&prefix)
+          {
+            fs::remove_file(path).unwrap();
           }
         }
       }

@@ -16,7 +16,6 @@
   min_specialization,    // for rustc_index::newtype_index 
   type_alias_impl_trait, // for iterators in traits
   box_patterns,          // for ergonomics
-  let_chains,            // for places_conflict module
   exact_size_is_empty,   // for graphviz module
   impl_trait_in_assoc_type,
   doc_auto_cfg,          // for feature gates in documentation

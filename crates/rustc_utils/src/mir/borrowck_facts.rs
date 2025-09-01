@@ -12,7 +12,7 @@ use rustc_middle::{
 };
 use rustc_span::ErrorGuaranteed;
 
-use crate::{block_timer, cache::Cache, BodyExt};
+use crate::{BodyExt, block_timer, cache::Cache};
 
 /// MIR pass to remove instructions not important for Flowistry.
 ///
@@ -56,7 +56,7 @@ pub fn enable_mir_simplification() {
   SIMPLIFY_MIR.store(true, Ordering::SeqCst);
 }
 
-/// You must use this function in [`rustc_driver::Callbacks::config`] to call [`get_body_with_borrowck_facts`].
+/// You must use this function in [`rustc_driver::Callbacks::config`] to call [`get_bodies_with_borrowck_facts`].
 ///
 /// For why we need to do override mir_borrowck, see:
 /// <https://github.com/rust-lang/rust/blob/485ced56b8753ec86936903f2a8c95e9be8996a1/src/test/run-make-fulldeps/obtain-borrowck/driver.rs>
@@ -73,27 +73,28 @@ fn mir_borrowck(
   def_id: LocalDefId,
 ) -> Result<&ConcreteOpaqueTypes<'_>, ErrorGuaranteed> {
   block_timer!(&format!(
-    "get_body_with_borrowck_facts for {}",
+    "get_bodies_with_borrowck_facts for {}",
     tcx.def_path_debug_str(def_id.to_def_id())
   ));
 
-  let mut body_with_facts = rustc_borrowck::consumers::get_body_with_borrowck_facts(
+  let mut body_with_facts = rustc_borrowck::consumers::get_bodies_with_borrowck_facts(
     tcx,
     def_id,
     ConsumerOptions::PoloniusInputFacts,
   );
 
-  if SIMPLIFY_MIR.load(Ordering::SeqCst) {
-    simplify_mir(&mut body_with_facts.body);
+  for (def_id, mut body_with_facts) in body_with_facts.drain() {
+    if SIMPLIFY_MIR.load(Ordering::SeqCst) {
+      simplify_mir(&mut body_with_facts.body);
+    }
+
+    // SAFETY: The reader casts the 'static lifetime to 'tcx before using it.
+    let body_with_facts: BodyWithBorrowckFacts<'static> =
+      unsafe { std::mem::transmute(body_with_facts) };
+    MIR_BODIES.with(|cache| {
+      cache.get(&def_id, |_| body_with_facts);
+    });
   }
-
-  // SAFETY: The reader casts the 'static lifetime to 'tcx before using it.
-  let body_with_facts: BodyWithBorrowckFacts<'static> =
-    unsafe { std::mem::transmute(body_with_facts) };
-  MIR_BODIES.with(|cache| {
-    cache.get(&def_id, |_| body_with_facts);
-  });
-
   let mut providers = Providers::default();
   rustc_borrowck::provide(&mut providers);
   let original_mir_borrowck = providers.mir_borrowck;

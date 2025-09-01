@@ -5,18 +5,18 @@ use log::trace;
 use rustc_hir::{self as hir, BodyId, ExprKind, MatchSource, Node};
 use rustc_middle::{
   mir::{
-    self, visit::Visitor as MirVisitor, Body, StatementKind, TerminatorKind, RETURN_PLACE,
+    self, Body, RETURN_PLACE, StatementKind, TerminatorKind, visit::Visitor as MirVisitor,
   },
   ty::TyCtxt,
 };
-use rustc_span::{source_map::Spanned, Span, SpanData};
+use rustc_span::{Span, SpanData, source_map::Spanned};
 
 pub use self::hir_span::EnclosingHirSpans;
 use self::{
   mir_span::{MirSpanCollector, MirSpannedPlace},
   span_tree::SpanTree,
 };
-use crate::{mir::location_or_arg::LocationOrArg, BodyExt, SpanDataExt, SpanExt};
+use crate::{BodyExt, SpanDataExt, SpanExt, mir::location_or_arg::LocationOrArg};
 
 mod hir_span;
 mod mir_span;
@@ -49,8 +49,7 @@ impl<'tcx> Spanner<'tcx> {
     };
     trace!(
       "Body span: {:?}, item span: {:?}",
-      spanner.body_span,
-      spanner.item_span
+      spanner.body_span, spanner.item_span
     );
 
     let mut mir_collector = MirSpanCollector(&mut spanner, body);
