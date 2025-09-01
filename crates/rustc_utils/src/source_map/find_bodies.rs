@@ -15,7 +15,6 @@ impl<'tcx> Visitor<'tcx> for BodyFinder<'tcx> {
 
   fn visit_nested_body(&mut self, id: BodyId) {
     let tcx = self.tcx;
-    let hir = tcx.hir();
 
     // const/static items are considered to have bodies, so we want to exclude
     // them from our search for functions
@@ -29,7 +28,7 @@ impl<'tcx> Visitor<'tcx> for BodyFinder<'tcx> {
     let body = tcx.hir_body(id);
     self.visit_body(body);
 
-    let span = hir.span_with_body(tcx.hir_body_owner(id));
+    let span = tcx.hir_span_with_body(tcx.hir_body_owner(id));
     trace!(
       "Searching body for {:?} with span {span:?} (local {:?})",
       self

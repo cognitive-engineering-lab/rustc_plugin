@@ -353,7 +353,7 @@ fn qpath_to_span(tcx: TyCtxt, qpath: String) -> Result<Span> {
         .def_path(local_def_id.to_def_id())
         .to_string_no_crate_verbose();
       if function_path[2 ..] == self.qpath {
-        self.span = Some(self.tcx.hir().span(id.hir_id));
+        self.span = Some(self.tcx.hir_span(id.hir_id));
       }
     }
   }

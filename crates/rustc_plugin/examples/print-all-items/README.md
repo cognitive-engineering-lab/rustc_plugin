@@ -15,7 +15,7 @@ cargo print-all-items
 You should see the output:
 
 ```text
-There is an item "" of type "`use` import"
+There is an of type "`use` import"
 There is an item "std" of type "extern crate"
 There is an item "add" of type "function"
 ```

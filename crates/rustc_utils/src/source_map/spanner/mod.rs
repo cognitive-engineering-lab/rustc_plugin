@@ -34,10 +34,9 @@ pub struct Spanner<'tcx> {
 
 impl<'tcx> Spanner<'tcx> {
   pub fn new(tcx: TyCtxt<'tcx>, body_id: BodyId, body: &Body<'tcx>) -> Self {
-    let hir = tcx.hir();
     let hir_body = tcx.hir_body(body_id);
     let owner = tcx.hir_body_owner(body_id);
-    let item_span = hir.span_with_body(owner);
+    let item_span = tcx.hir_span_with_body(owner);
     let ret_span = tcx.hir_fn_decl_by_hir_id(owner).unwrap().output.span();
 
     let mut spanner = Spanner {
