@@ -160,10 +160,9 @@ impl<'tcx> Spanner<'tcx> {
       kind: StatementKind::Assign(box (lhs, _)),
       ..
     })) = stmt
+      && lhs.local == RETURN_PLACE
     {
-      if lhs.local == RETURN_PLACE {
-        hir_spans.push(self.ret_span);
-      }
+      hir_spans.push(self.ret_span);
     }
 
     let format_spans = |spans: &[Span]| -> String {
