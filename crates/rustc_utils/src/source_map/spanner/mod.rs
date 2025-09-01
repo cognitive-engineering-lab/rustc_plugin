@@ -5,18 +5,18 @@ use log::trace;
 use rustc_hir::{self as hir, BodyId, ExprKind, MatchSource, Node};
 use rustc_middle::{
   mir::{
-    self, visit::Visitor as MirVisitor, Body, StatementKind, TerminatorKind, RETURN_PLACE,
+    self, Body, RETURN_PLACE, StatementKind, TerminatorKind, visit::Visitor as MirVisitor,
   },
   ty::TyCtxt,
 };
-use rustc_span::{source_map::Spanned, Span, SpanData};
+use rustc_span::{Span, SpanData, source_map::Spanned};
 
 pub use self::hir_span::EnclosingHirSpans;
 use self::{
   mir_span::{MirSpanCollector, MirSpannedPlace},
   span_tree::SpanTree,
 };
-use crate::{mir::location_or_arg::LocationOrArg, BodyExt, SpanDataExt, SpanExt};
+use crate::{BodyExt, SpanDataExt, SpanExt, mir::location_or_arg::LocationOrArg};
 
 mod hir_span;
 mod mir_span;
@@ -34,10 +34,9 @@ pub struct Spanner<'tcx> {
 
 impl<'tcx> Spanner<'tcx> {
   pub fn new(tcx: TyCtxt<'tcx>, body_id: BodyId, body: &Body<'tcx>) -> Self {
-    let hir = tcx.hir();
     let hir_body = tcx.hir_body(body_id);
     let owner = tcx.hir_body_owner(body_id);
-    let item_span = hir.span_with_body(owner);
+    let item_span = tcx.hir_span_with_body(owner);
     let ret_span = tcx.hir_fn_decl_by_hir_id(owner).unwrap().output.span();
 
     let mut spanner = Spanner {
@@ -50,8 +49,7 @@ impl<'tcx> Spanner<'tcx> {
     };
     trace!(
       "Body span: {:?}, item span: {:?}",
-      spanner.body_span,
-      spanner.item_span
+      spanner.body_span, spanner.item_span
     );
 
     let mut mir_collector = MirSpanCollector(&mut spanner, body);
@@ -161,10 +159,9 @@ impl<'tcx> Spanner<'tcx> {
       kind: StatementKind::Assign(box (lhs, _)),
       ..
     })) = stmt
+      && lhs.local == RETURN_PLACE
     {
-      if lhs.local == RETURN_PLACE {
-        hir_spans.push(self.ret_span);
-      }
+      hir_spans.push(self.ret_span);
     }
 
     let format_spans = |spans: &[Span]| -> String {

@@ -6,12 +6,13 @@ use rustc_borrowck::consumers::{BodyWithBorrowckFacts, ConsumerOptions};
 use rustc_data_structures::fx::FxHashSet as HashSet;
 use rustc_hir::def_id::LocalDefId;
 use rustc_middle::{
-  mir::{Body, BorrowCheckResult, StatementKind, TerminatorKind},
+  mir::{Body, ConcreteOpaqueTypes, StatementKind, TerminatorKind},
   ty::TyCtxt,
   util::Providers,
 };
+use rustc_span::ErrorGuaranteed;
 
-use crate::{block_timer, cache::Cache, BodyExt};
+use crate::{BodyExt, block_timer, cache::Cache};
 
 /// MIR pass to remove instructions not important for Flowistry.
 ///
@@ -39,7 +40,7 @@ pub fn simplify_mir(body: &mut Body<'_>) {
       TerminatorKind::FalseEdge { real_target, .. } => TerminatorKind::Goto {
         target: real_target,
       },
-      // Ensures that control dependencies can determine the independence of differnet
+      // Ensures that control dependencies can determine the independence of different
       // return paths
       TerminatorKind::Goto { target } if return_blocks.contains(&target) => {
         TerminatorKind::Return
@@ -67,29 +68,33 @@ thread_local! {
   static MIR_BODIES: Cache<LocalDefId, BodyWithBorrowckFacts<'static>> = Cache::default();
 }
 
-fn mir_borrowck(tcx: TyCtxt<'_>, def_id: LocalDefId) -> &BorrowCheckResult<'_> {
+fn mir_borrowck(
+  tcx: TyCtxt<'_>,
+  def_id: LocalDefId,
+) -> Result<&ConcreteOpaqueTypes<'_>, ErrorGuaranteed> {
   block_timer!(&format!(
-    "get_body_with_borrowck_facts for {}",
+    "get_bodies_with_borrowck_facts for {}",
     tcx.def_path_debug_str(def_id.to_def_id())
   ));
 
-  let mut body_with_facts = rustc_borrowck::consumers::get_body_with_borrowck_facts(
+  let mut body_with_facts = rustc_borrowck::consumers::get_bodies_with_borrowck_facts(
     tcx,
     def_id,
     ConsumerOptions::PoloniusInputFacts,
   );
 
-  if SIMPLIFY_MIR.load(Ordering::SeqCst) {
-    simplify_mir(&mut body_with_facts.body);
+  for (def_id, mut body_with_facts) in body_with_facts.drain() {
+    if SIMPLIFY_MIR.load(Ordering::SeqCst) {
+      simplify_mir(&mut body_with_facts.body);
+    }
+
+    // SAFETY: The reader casts the 'static lifetime to 'tcx before using it.
+    let body_with_facts: BodyWithBorrowckFacts<'static> =
+      unsafe { std::mem::transmute(body_with_facts) };
+    MIR_BODIES.with(|cache| {
+      cache.get(&def_id, |_| body_with_facts);
+    });
   }
-
-  // SAFETY: The reader casts the 'static lifetime to 'tcx before using it.
-  let body_with_facts: BodyWithBorrowckFacts<'static> =
-    unsafe { std::mem::transmute(body_with_facts) };
-  MIR_BODIES.with(|cache| {
-    cache.get(&def_id, |_| body_with_facts);
-  });
-
   let mut providers = Providers::default();
   rustc_borrowck::provide(&mut providers);
   let original_mir_borrowck = providers.mir_borrowck;

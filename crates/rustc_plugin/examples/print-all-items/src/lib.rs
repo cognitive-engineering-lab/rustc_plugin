@@ -12,8 +12,8 @@ use std::{borrow::Cow, env, process::Command};
 
 use clap::Parser;
 use rustc_hir::{
-  intravisit::{self, Visitor},
   Item,
+  intravisit::{self, Visitor},
 };
 use rustc_middle::ty::TyCtxt;
 use rustc_plugin::{CrateFilter, RustcPlugin, RustcPluginArgs, Utf8Path};
@@ -25,7 +25,7 @@ pub struct PrintAllItemsPlugin;
 
 // To parse CLI arguments, we use Clap for this example. But that
 // detail is up to you.
-#[derive(Parser, Serialize, Deserialize)]
+#[derive(Parser, Serialize, Deserialize, Clone)]
 pub struct PrintAllItemsPluginArgs {
   #[arg(short, long)]
   allcaps: bool,
@@ -102,20 +102,28 @@ impl rustc_driver::Callbacks for PrintAllItemsCallbacks {
 // I recommend reading the Rustc Development Guide to better understand which compiler APIs
 // are relevant to whatever task you have.
 fn print_all_items(tcx: TyCtxt, args: PrintAllItemsPluginArgs) {
-  tcx.hir_visit_all_item_likes_in_crate(&mut PrintVisitor { args });
+  tcx.hir_visit_all_item_likes_in_crate(&mut PrintVisitor { args, tcx });
 }
 
-struct PrintVisitor {
+struct PrintVisitor<'tcx> {
   args: PrintAllItemsPluginArgs,
+  tcx: TyCtxt<'tcx>,
 }
 
-impl Visitor<'_> for PrintVisitor {
-  fn visit_item(&mut self, item: &Item) -> Self::Result {
-    let mut msg = format!(
-      "There is an item \"{}\" of type \"{}\"",
-      item.ident,
-      item.kind.descr()
-    );
+impl<'tcx> Visitor<'tcx> for PrintVisitor<'tcx> {
+  fn visit_item(&mut self, item: &'tcx Item<'tcx>) -> Self::Result {
+    let mut msg = if let Some(ident) = item.kind.ident() {
+      format!(
+        "There is an item \"{}\" of type \"{}\"",
+        ident,
+        self.tcx.def_descr(item.owner_id.to_def_id())
+      )
+    } else {
+      format!(
+        "There is an item of type \"{}\"",
+        self.tcx.def_descr(item.owner_id.to_def_id())
+      )
+    };
     if self.args.allcaps {
       msg = msg.to_uppercase();
     }
