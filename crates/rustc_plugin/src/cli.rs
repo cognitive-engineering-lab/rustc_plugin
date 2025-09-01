@@ -237,14 +237,10 @@ fn only_run_on_file(
     }
     .replace('-', "_"),
   );
-  cmd.env(
-    SPECIFIC_TARGET,
-    if matches!(kind, CompileKind::Bench | CompileKind::Example) {
-      "bin"
-    } else {
-      kind_str
-    },
-  );
+  cmd.env(SPECIFIC_TARGET, match kind {
+    CompileKind::Bench | CompileKind::Example => "bin",
+    _ => kind_str,
+  });
 
   log::debug!(
     "Package: {}, target kind {}, target name {}",
