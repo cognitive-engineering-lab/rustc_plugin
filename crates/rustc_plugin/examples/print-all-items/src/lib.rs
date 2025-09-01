@@ -111,11 +111,15 @@ struct PrintVisitor {
 
 impl Visitor<'_> for PrintVisitor {
   fn visit_item(&mut self, item: &Item) -> Self::Result {
-    let mut msg = format!(
-      "There is an item \"{}\" of type \"{}\"",
-      item.ident,
-      item.kind.descr()
-    );
+    let mut msg = if let Some(ident) = item.kind.ident() {
+      format!(
+        "There is an item \"{}\" of type \"{}\"",
+        ident,
+        item.kind.descr()
+      )
+    } else {
+      format!("There is an item of type \"{}\"", item.kind.descr())
+    };
     if self.args.allcaps {
       msg = msg.to_uppercase();
     }

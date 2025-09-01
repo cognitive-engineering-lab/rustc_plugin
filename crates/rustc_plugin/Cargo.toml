@@ -1,6 +1,6 @@
 [package]
 name = "rustc_plugin"
-version = "0.13.0-nightly-2025-03-03"
+version = "0.14.0-nightly-2025-04-01"
 edition = "2021"
 authors = ["Will Crichton <crichton.will@gmail.com>"]
 description = "A framework for writing plugins that integrate with the Rust compiler"
@@ -18,7 +18,7 @@ serde = "1"
 serde_json = "1"
 
 [dev-dependencies]
-anyhow = {version = "1", features = ["backtrace"]}
+anyhow = { version = "1", features = ["backtrace"] }
 
 [build-dependencies]
 toml = "0.7"
