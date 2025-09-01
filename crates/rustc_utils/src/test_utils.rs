@@ -347,7 +347,7 @@ impl<'tcx> PlaceBuilder<'_, 'tcx> {
   pub fn field(mut self, i: usize) -> Self {
     let f = FieldIdx::from_usize(i);
     let place_ty = self.place.ty(self.body.local_decls(), self.tcx);
-    let ty = PlaceTy::field_ty(self.tcx, place_ty.ty, None, f);
+    let ty = PlaceTy::field_ty(self.tcx, place_ty.ty, place_ty.variant_index, f);
     self.place = self.tcx.mk_place_field(self.place, f, ty);
     self
   }
