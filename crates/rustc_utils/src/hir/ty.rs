@@ -26,7 +26,7 @@ pub trait TyExt<'tcx> {
 
 impl<'tcx> TyExt<'tcx> for Ty<'tcx> {
   fn inner_regions(self) -> impl Iterator<Item = Region<'tcx>> {
-    self.walk().filter_map(|part| match part.unpack() {
+    self.walk().filter_map(|part| match part.kind() {
       GenericArgKind::Lifetime(region) => Some(region),
       _ => None,
     })

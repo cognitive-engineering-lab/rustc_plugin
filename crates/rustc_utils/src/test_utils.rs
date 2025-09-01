@@ -18,7 +18,7 @@ use rustc_data_structures::fx::{FxHashMap as HashMap, FxHashSet as HashSet};
 use rustc_driver::run_compiler;
 use rustc_hir::BodyId;
 use rustc_middle::{
-  mir::{Body, HasLocalDecls, Local, Place},
+  mir::{Body, HasLocalDecls, Local, Place, PlaceTy},
   ty::TyCtxt,
 };
 use rustc_span::source_map::FileLoader;
@@ -346,10 +346,8 @@ pub struct PlaceBuilder<'a, 'tcx> {
 impl<'tcx> PlaceBuilder<'_, 'tcx> {
   pub fn field(mut self, i: usize) -> Self {
     let f = FieldIdx::from_usize(i);
-    let ty = self
-      .place
-      .ty(self.body.local_decls(), self.tcx)
-      .field_ty(self.tcx, f);
+    let place_ty = self.place.ty(self.body.local_decls(), self.tcx);
+    let ty = PlaceTy::field_ty(self.tcx, place_ty.ty, None, f);
     self.place = self.tcx.mk_place_field(self.place, f, ty);
     self
   }
