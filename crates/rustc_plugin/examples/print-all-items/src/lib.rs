@@ -112,17 +112,16 @@ struct PrintVisitor<'tcx> {
 
 impl<'tcx> Visitor<'tcx> for PrintVisitor<'tcx> {
   fn visit_item(&mut self, item: &'tcx Item<'tcx>) -> Self::Result {
-    let mut msg = if let Some(ident) = item.kind.ident() {
-      format!(
+    let mut msg = match item.kind.ident() {
+      Some(ident) => format!(
         "There is an item \"{}\" of type \"{}\"",
         ident,
         self.tcx.def_descr(item.owner_id.to_def_id())
-      )
-    } else {
-      format!(
+      ),
+      None => format!(
         "There is an item of type \"{}\"",
         self.tcx.def_descr(item.owner_id.to_def_id())
-      )
+      ),
     };
     if self.args.allcaps {
       msg = msg.to_uppercase();
