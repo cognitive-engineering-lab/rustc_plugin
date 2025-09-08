@@ -1,6 +1,6 @@
 [package]
 name = "rustc_plugin"
-version = "0.14.0-nightly-2025-08-20"
+version = "0.14.1-nightly-2025-08-20"
 edition = "2024"
 authors = ["Will Crichton <crichton.will@gmail.com>"]
 description = "A framework for writing plugins that integrate with the Rust compiler"
