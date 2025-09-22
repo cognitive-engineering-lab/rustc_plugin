@@ -2,7 +2,7 @@ use std::cmp;
 
 use log::trace;
 use rustc_middle::ty::TyCtxt;
-use rustc_span::{source_map::SourceMap, BytePos, Pos, Span, SpanData, SyntaxContext};
+use rustc_span::{BytePos, Pos, Span, SpanData, SyntaxContext, source_map::SourceMap};
 
 /// Extension trait for [`Span`].
 pub trait SpanExt {

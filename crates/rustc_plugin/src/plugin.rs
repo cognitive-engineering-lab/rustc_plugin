@@ -1,7 +1,7 @@
 use std::{borrow::Cow, path::PathBuf, process::Command};
 
 use cargo_metadata::camino::Utf8Path;
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 
 /// Specification of a set of crates.
 pub enum CrateFilter {

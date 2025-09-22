@@ -1,9 +1,9 @@
 use log::trace;
-use rustc_hir::{intravisit::Visitor, BodyId};
+use rustc_hir::{BodyId, intravisit::Visitor};
 use rustc_middle::{hir::nested_filter::OnlyBodies, ty::TyCtxt};
 use rustc_span::Span;
 
-use crate::{block_timer, SpanExt};
+use crate::{SpanExt, block_timer};
 
 struct BodyFinder<'tcx> {
   tcx: TyCtxt<'tcx>,

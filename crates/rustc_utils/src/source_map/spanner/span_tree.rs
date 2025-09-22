@@ -1,5 +1,5 @@
 use intervaltree::IntervalTree;
-use rustc_span::{source_map::Spanned, BytePos, SpanData};
+use rustc_span::{BytePos, SpanData, source_map::Spanned};
 
 /// Interval tree data structure specialized to spans.
 pub struct SpanTree<T> {

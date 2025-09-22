@@ -2,13 +2,13 @@ use std::{
   env,
   ops::Deref,
   path::{Path, PathBuf},
-  process::{exit, Command},
+  process::{Command, exit},
 };
 
-use rustc_session::{config::ErrorOutputType, EarlyDiagCtxt};
+use rustc_session::{EarlyDiagCtxt, config::ErrorOutputType};
 use rustc_tools_util::VersionInfo;
 
-use super::plugin::{RustcPlugin, PLUGIN_ARGS};
+use super::plugin::{PLUGIN_ARGS, RustcPlugin};
 use crate::cli::{RUN_ON_ALL_CRATES, SPECIFIC_CRATE, SPECIFIC_TARGET};
 
 /// If a command-line option matches `find_arg`, then apply the predicate `pred` on its value. If

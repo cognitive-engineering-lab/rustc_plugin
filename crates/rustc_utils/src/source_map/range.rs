@@ -3,15 +3,15 @@ use std::{
   path::PathBuf, sync::Arc,
 };
 
-use anyhow::{bail, ensure, Context, Result};
+use anyhow::{Context, Result, bail, ensure};
 use rustc_data_structures::fx::FxHashMap as HashMap;
 use rustc_hir::{
-  intravisit::{self, Visitor},
   BodyId,
+  intravisit::{self, Visitor},
 };
 use rustc_index::IndexVec;
 use rustc_middle::ty::TyCtxt;
-use rustc_span::{source_map::SourceMap, FileName, RealFileName, SourceFile, Span};
+use rustc_span::{FileName, RealFileName, SourceFile, Span, source_map::SourceMap};
 #[cfg(feature = "serde")]
 use serde::Serialize;
 #[cfg(feature = "ts-rs")]

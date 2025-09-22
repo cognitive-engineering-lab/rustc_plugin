@@ -1,19 +1,18 @@
 use either::Either;
 use log::trace;
 use rustc_middle::mir::{
-  self,
+  self, Body, FakeReadCause, HasLocalDecls, Place, RETURN_PLACE, Statement,
+  StatementKind, Terminator, TerminatorKind,
   visit::{
     MutatingUseContext, NonMutatingUseContext, NonUseContext, PlaceContext,
     Visitor as MirVisitor,
   },
-  Body, FakeReadCause, HasLocalDecls, Place, Statement, StatementKind, Terminator,
-  TerminatorKind, RETURN_PLACE,
 };
 use rustc_span::SpanData;
-use smallvec::{smallvec, SmallVec};
+use smallvec::{SmallVec, smallvec};
 
 use super::Spanner;
-use crate::{mir::location_or_arg::LocationOrArg, BodyExt, PlaceExt, SpanExt};
+use crate::{BodyExt, PlaceExt, SpanExt, mir::location_or_arg::LocationOrArg};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MirSpannedPlace<'tcx> {

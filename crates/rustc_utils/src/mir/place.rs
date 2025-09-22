@@ -9,9 +9,9 @@ use rustc_hir::def_id::DefId;
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::{
   mir::{
-    visit::{PlaceContext, Visitor},
     Body, HasLocalDecls, Local, Location, Mutability, Place, PlaceElem, PlaceRef,
-    ProjectionElem, VarDebugInfo, VarDebugInfoContents, RETURN_PLACE,
+    ProjectionElem, RETURN_PLACE, VarDebugInfo, VarDebugInfoContents,
+    visit::{PlaceContext, Visitor},
   },
   traits::ObligationCause,
   ty::{self, AdtKind, Region, RegionKind, RegionVid, Ty, TyCtxt, TyKind, TypeVisitor},
@@ -643,8 +643,8 @@ mod test {
   };
 
   use crate::{
-    test_utils::{self, compare_sets, Placer},
     BodyExt, PlaceExt,
+    test_utils::{self, Placer, compare_sets},
   };
 
   #[test]

@@ -9,12 +9,12 @@
 use std::fmt;
 
 use rustc_data_structures::graph::{
-  dominators, dominators::Dominators, iterate, vec_graph::VecGraph, ControlFlowGraph,
-  DirectedGraph, Predecessors, StartNode, Successors,
+  ControlFlowGraph, DirectedGraph, Predecessors, StartNode, Successors, dominators,
+  dominators::Dominators, iterate, vec_graph::VecGraph,
 };
 use rustc_index::{
-  bit_set::{DenseBitSet, MixedBitSet, SparseBitMatrix},
   Idx,
+  bit_set::{DenseBitSet, MixedBitSet, SparseBitMatrix},
 };
 use smallvec::SmallVec;
 
@@ -206,7 +206,7 @@ mod test {
   use rustc_middle::mir::Location;
   use test_log::test;
 
-  use crate::{test_utils, BodyExt};
+  use crate::{BodyExt, test_utils};
 
   #[test]
   fn test_control_dependencies() {

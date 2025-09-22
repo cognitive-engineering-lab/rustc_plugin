@@ -6,14 +6,14 @@ use std::{
   process::{Command, Stdio},
 };
 
-use anyhow::{ensure, Result};
+use anyhow::{Result, ensure};
 use pretty::PrettyPrintMirOptions;
 use rustc_data_structures::fx::FxHashMap as HashMap;
-use rustc_hir::{def_id::DefId, CoroutineDesugaring, CoroutineKind, HirId};
+use rustc_hir::{CoroutineDesugaring, CoroutineKind, HirId, def_id::DefId};
 use rustc_middle::{
   mir::{
-    pretty, pretty::write_mir_fn, BasicBlock, Body, Local, Location, Place, SourceInfo,
-    TerminatorKind, VarDebugInfoContents,
+    BasicBlock, Body, Local, Location, Place, SourceInfo, TerminatorKind,
+    VarDebugInfoContents, pretty, pretty::write_mir_fn,
   },
   ty::{Region, Ty, TyCtxt},
 };

@@ -1,8 +1,7 @@
 use hir::{HirId, LoopSource};
 use rustc_hir::{
-  self as hir,
+  self as hir, ExprKind, MatchSource, Node,
   intravisit::{self, Visitor as HirVisitor},
-  ExprKind, MatchSource, Node,
 };
 use rustc_span::{BytePos, Span};
 

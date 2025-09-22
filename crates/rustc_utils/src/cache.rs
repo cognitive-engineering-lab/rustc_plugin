@@ -73,6 +73,12 @@ where
   pub fn len(&self) -> usize {
     self.0.borrow().len()
   }
+
+  /// Returns true if the cache contains the key.
+  pub fn contains_key(&self, key: &In) -> bool {
+    self.0.borrow().contains_key(key)
+  }
+
   /// Returns the cached value for the given key, or runs `compute` if
   /// the value is not in cache.
   ///
@@ -84,6 +90,7 @@ where
       .get_maybe_recursive(key, compute)
       .unwrap_or_else(recursion_panic)
   }
+
   /// Returns the cached value for the given key, or runs `compute` if
   /// the value is not in cache.
   ///
@@ -112,7 +119,9 @@ where
 }
 
 fn recursion_panic<A>() -> A {
-  panic!("Recursion detected! The computation of a value tried to retrieve the same from the cache. Using `get_maybe_recursive` to handle this case gracefully.")
+  panic!(
+    "Recursion detected! The computation of a value tried to retrieve the same from the cache. Using `get_maybe_recursive` to handle this case gracefully."
+  )
 }
 
 impl<In, Out> Default for Cache<In, Out> {

@@ -10,7 +10,7 @@ use std::{
   sync::{Arc, LazyLock},
 };
 
-use anyhow::{anyhow, ensure, Context, Result};
+use anyhow::{Context, Result, anyhow, ensure};
 use log::debug;
 use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_borrowck::consumers::BodyWithBorrowckFacts;
@@ -24,13 +24,13 @@ use rustc_middle::{
 use rustc_span::source_map::FileLoader;
 
 use crate::{
+  BodyExt, PlaceExt,
   mir::borrowck_facts,
   source_map::{
     filename::{Filename, FilenameIndex},
     find_bodies::{find_bodies, find_enclosing_bodies},
     range::{BytePos, ByteRange, CharPos, CharRange, ToSpan},
   },
-  BodyExt, PlaceExt,
 };
 
 pub struct StringLoader(pub String);
@@ -132,7 +132,7 @@ impl CompileBuilder {
 pub fn compile_body(
   input: impl Into<String>,
   callback: impl for<'tcx> FnOnce(TyCtxt<'tcx>, BodyId, &'tcx BodyWithBorrowckFacts<'tcx>)
-    + Send,
+  + Send,
 ) {
   CompileBuilder::new(input).compile(|result| {
     let (body_id, body_with_facts) = result.as_body();
@@ -376,8 +376,8 @@ impl<'tcx> PlaceBuilder<'_, 'tcx> {
 }
 
 pub fn compare_sets<T: PartialEq + Eq + Clone + Hash + Debug>(
-  expected: impl IntoIterator<Item = T>,
   actual: impl IntoIterator<Item = T>,
+  expected: impl IntoIterator<Item = T>,
 ) {
   let expected = expected.into_iter().collect::<HashSet<_>>();
   let actual = actual.into_iter().collect::<HashSet<_>>();
