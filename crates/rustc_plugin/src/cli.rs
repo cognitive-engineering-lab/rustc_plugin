@@ -26,7 +26,7 @@ pub fn cli_main<T: RustcPlugin>(plugin: T) {
     .other_options(["--all-features".to_string(), "--offline".to_string()])
     .exec()
     .unwrap();
-  let plugin_subdir = format!("plugin-{}", env!("RUSTC_CHANNEL"));
+  let plugin_subdir = format!("plugin-{}", crate::CHANNEL);
   let target_dir = metadata.target_directory.join(plugin_subdir);
 
   let args = plugin.args(&target_dir);
