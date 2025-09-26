@@ -1,0 +1,41 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Building blocks for advanced wrapping functionality."><title>textwrap::core - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-528d32ef.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="textwrap" data-themes="" data-resource-suffix="" data-rustdoc-version="1.91.0-nightly (05f5a58e8 2025-08-19)" data-channel="nightly" data-search-js="search-5f24b69e.js" data-stringdex-js="stringdex-0e748618.js" data-settings-js="settings-c38705f0.js" ><script src="../../static.files/storage-1b37d467.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-b6a35c53.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Module core</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../textwrap/index.html">textwrap</a><span class="version">0.16.2</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module core</a></h2><h3><a href="#structs">Module Items</a></h3><ul class="block"><li><a href="#structs" title="Structs">Structs</a></li><li><a href="#traits" title="Traits">Traits</a></li><li><a href="#functions" title="Functions">Functions</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate textwrap</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">textwrap</a></div><h1>Module <span>core</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/textwrap/core.rs.html#1-461">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Building blocks for advanced wrapping functionality.</p>
+<p>The functions and structs in this module can be used to implement
+advanced wrapping functionality when <a href="../fn.wrap.html" title="fn textwrap::wrap"><code>wrap()</code></a>
+<a href="../fn.fill.html" title="fn textwrap::fill"><code>fill()</code></a> don’t do what you want.</p>
+<p>In general, you want to follow these steps when wrapping
+something:</p>
+<ol>
+<li>
+<p>Split your input into <a href="trait.Fragment.html" title="trait textwrap::core::Fragment"><code>Fragment</code></a>s. These are abstract blocks
+of text or content which can be wrapped into lines. See
+<a href="../enum.WordSeparator.html" title="enum textwrap::WordSeparator"><code>WordSeparator</code></a> for
+how to do this for text.</p>
+</li>
+<li>
+<p>Potentially split your fragments into smaller pieces. This
+allows you to implement things like hyphenation. If you use the
+<code>Word</code> type, you can use <a href="../word_splitters/enum.WordSplitter.html" title="enum textwrap::word_splitters::WordSplitter"><code>WordSplitter</code></a>
+enum for this.</p>
+</li>
+<li>
+<p>Potentially break apart fragments that are still too large to
+fit on a single line. This is implemented in <a href="fn.break_words.html" title="fn textwrap::core::break_words"><code>break_words</code></a>.</p>
+</li>
+<li>
+<p>Finally take your fragments and put them into lines. There are
+two algorithms for this in the
+<a href="../wrap_algorithms/index.html" title="mod textwrap::wrap_algorithms"><code>wrap_algorithms</code></a> module:
+<a href="../wrap_algorithms/fn.wrap_optimal_fit.html" title="fn textwrap::wrap_algorithms::wrap_optimal_fit"><code>wrap_optimal_fit</code></a>
+and <a href="../wrap_algorithms/fn.wrap_first_fit.html" title="fn textwrap::wrap_algorithms::wrap_first_fit"><code>wrap_first_fit</code></a>.
+The former produces better line breaks, the latter is faster.</p>
+</li>
+<li>
+<p>Iterate through the slices returned by the wrapping functions
+and construct your lines of output.</p>
+</li>
+</ol>
+<p>Please <a href="https://github.com/mgeisler/textwrap/">open an issue</a> if
+the functionality here is not sufficient or if you have ideas for
+improving it. We would love to hear from you!</p>
+</div></details><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.Word.html" title="struct textwrap::core::Word">Word</a></dt><dd>A piece of wrappable text, including any trailing whitespace.</dd></dl><h2 id="traits" class="section-header">Traits<a href="#traits" class="anchor">§</a></h2><dl class="item-table"><dt><a class="trait" href="trait.Fragment.html" title="trait textwrap::core::Fragment">Fragment</a></dt><dd>A (text) fragment denotes the unit which we wrap into lines.</dd></dl><h2 id="functions" class="section-header">Functions<a href="#functions" class="anchor">§</a></h2><dl class="item-table"><dt><a class="fn" href="fn.break_words.html" title="fn textwrap::core::break_words">break_<wbr>words</a></dt><dd>Forcibly break words wider than <code>line_width</code> into smaller words.</dd><dt><a class="fn" href="fn.display_width.html" title="fn textwrap::core::display_width">display_<wbr>width</a></dt><dd>Compute the display width of <code>text</code> while skipping over ANSI
+escape sequences.</dd></dl></section></div></main></body></html>
