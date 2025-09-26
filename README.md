@@ -11,7 +11,7 @@
 The Rust compiler's interface is not stable, so the only sensible way to develop a Rust compiler plugin is by pinning to a specific nightly. Each version of `rustc_plugin` is pinned to one nightly, and you *have* to use the same nightly version that we do. Therefore each release of `rustc_plugin` has a semantic version number (e.g. `0.1.0`) and the nightly version is added as a prerelease label (e.g. `-nightly-2023-08-25`). You can add a dependency to your `Cargo.toml` like this:
  
 ```toml
-rustc_plugin = "=0.14.1-nightly-2025-08-20"
+rustc_plugin = "=0.14.3-nightly-2025-08-20"
 ```
 
 We will treat a change to the nightly version as a breaking change, so the semantic version will be correspondingly updated as a breaking update.
@@ -61,6 +61,6 @@ Normally, Rust libraries have a [minimum supported Rust version][msrv] because t
 [Argus]: https://github.com/cognitive-engineering-lab/argus
 [Clippy]: https://github.com/rust-lang/rust-clippy
 [example]: https://github.com/cognitive-engineering-lab/rustc_plugin/tree/main/crates/rustc_plugin/examples/print-all-items
-[docs]: https://cognitive-engineering-lab.github.io/rustc_plugin/v0.14.0-nightly-2025-08-20/rustc_plugin/
-[docs-utils]: https://cognitive-engineering-lab.github.io/rustc_plugin/v0.14.0-nightly-2025-08-20/rustc_utils/
+[docs]: https://cognitive-engineering-lab.github.io/rustc_plugin/v0.14.3-nightly-2025-08-20/rustc_plugin/
+[docs-utils]: https://cognitive-engineering-lab.github.io/rustc_plugin/v0.14.3-nightly-2025-08-20/rustc_utils/
 [msrv]: https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field
