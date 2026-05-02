@@ -1,11 +1,11 @@
 [package]
 name = "rustc_utils"
-version = "0.15.0-nightly-2026-05-01"
-edition = "2024"
-authors = ["Will Crichton <crichton.will@gmail.com>"]
 description = "Utilities for working with the Rust compiler"
-repository = "https://github.com/cognitive-engineering-lab/rustc_plugin"
-license = "MIT"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+license = { workspace = true }
 
 [package.metadata.rust-analyzer]
 rustc_private = true
