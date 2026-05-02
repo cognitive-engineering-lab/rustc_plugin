@@ -41,7 +41,7 @@ impl<'tcx> TyExt<'tcx> for Ty<'tcx> {
     use rustc_infer::traits::EvaluationResult;
 
     let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
-    let ty = tcx.erase_regions(self);
+    let ty = tcx.erase_and_anonymize_regions(self);
     let result = infcx.type_implements_trait(trait_def_id, [ty], param_env);
     matches!(
       result,
@@ -50,7 +50,7 @@ impl<'tcx> TyExt<'tcx> for Ty<'tcx> {
   }
 
   fn is_copyable(self, tcx: TyCtxt<'tcx>, typing_env: TypingEnv<'tcx>) -> bool {
-    let ty = tcx.erase_regions(self);
+    let ty = tcx.erase_and_anonymize_regions(self);
     tcx.type_is_copy_modulo_regions(typing_env, ty)
   }
 }

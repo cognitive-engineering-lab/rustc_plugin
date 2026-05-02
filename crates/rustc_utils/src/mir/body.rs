@@ -7,13 +7,12 @@ use std::{
 };
 
 use anyhow::{Result, ensure};
-use pretty::PrettyPrintMirOptions;
 use rustc_data_structures::fx::FxHashMap as HashMap;
 use rustc_hir::{CoroutineDesugaring, CoroutineKind, HirId, def_id::DefId};
 use rustc_middle::{
   mir::{
     BasicBlock, Body, Local, Location, Place, SourceInfo, TerminatorKind,
-    VarDebugInfoContents, pretty, pretty::write_mir_fn,
+    VarDebugInfoContents, pretty::MirWriter,
   },
   ty::{Region, Ty, TyCtxt},
 };
@@ -118,15 +117,7 @@ impl<'tcx> BodyExt<'tcx> for Body<'tcx> {
 
   fn to_string(&self, tcx: TyCtxt<'tcx>) -> Result<String> {
     let mut buffer = Vec::new();
-    write_mir_fn(
-      tcx,
-      self,
-      &mut |_, _| Ok(()),
-      &mut buffer,
-      PrettyPrintMirOptions {
-        include_extra_comments: false,
-      },
-    )?;
+    MirWriter::new(tcx).write_mir_fn(self, &mut buffer)?;
     Ok(String::from_utf8(buffer)?)
   }
 

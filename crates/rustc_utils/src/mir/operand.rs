@@ -12,7 +12,7 @@ impl<'tcx> OperandExt<'tcx> for Operand<'tcx> {
   fn as_place(&self) -> Option<Place<'tcx>> {
     match self {
       Operand::Copy(place) | Operand::Move(place) => Some(*place),
-      Operand::Constant(_) => None,
+      Operand::Constant(_) | Operand::RuntimeChecks(_) => None,
     }
   }
 }

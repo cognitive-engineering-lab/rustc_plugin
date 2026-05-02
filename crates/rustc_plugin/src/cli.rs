@@ -1,7 +1,7 @@
 use std::{
   env, fs,
   path::PathBuf,
-  process::{Command, Stdio, exit},
+  process::{Command, ExitCode, Stdio},
 };
 
 use cargo_metadata::camino::Utf8Path;
@@ -15,10 +15,10 @@ pub const SPECIFIC_TARGET: &str = "SPECIFIC_TARGET";
 pub const CARGO_VERBOSE: &str = "CARGO_VERBOSE";
 
 /// The top-level function that should be called in your user-facing binary.
-pub fn cli_main<T: RustcPlugin>(plugin: T) {
+pub fn cli_main<T: RustcPlugin>(plugin: T) -> ExitCode {
   if env::args().any(|arg| arg == "-V") {
     println!("{}", plugin.version());
-    return;
+    return ExitCode::SUCCESS;
   }
 
   let metadata = cargo_metadata::MetadataCommand::new()
@@ -95,7 +95,10 @@ pub fn cli_main<T: RustcPlugin>(plugin: T) {
 
   let exit_status = cmd.status().expect("failed to wait for cargo?");
 
-  exit(exit_status.code().unwrap_or(-1));
+  match exit_status.code() {
+    Some(code) => ExitCode::from(u8::try_from(code).unwrap()),
+    None => ExitCode::FAILURE,
+  }
 }
 
 fn only_run_on_file(

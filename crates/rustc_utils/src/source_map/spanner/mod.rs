@@ -9,7 +9,7 @@ use rustc_middle::{
   },
   ty::TyCtxt,
 };
-use rustc_span::{Span, SpanData, source_map::Spanned};
+use rustc_span::{Span, SpanData, Spanned};
 
 pub use self::hir_span::EnclosingHirSpans;
 use self::{

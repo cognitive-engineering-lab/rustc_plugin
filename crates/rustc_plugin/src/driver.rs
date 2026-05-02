@@ -2,7 +2,7 @@ use std::{
   env,
   ops::Deref,
   path::{Path, PathBuf},
-  process::{Command, exit},
+  process::{Command, ExitCode, exit},
 };
 
 use rustc_session::{EarlyDiagCtxt, config::ErrorOutputType};
@@ -99,11 +99,11 @@ struct DefaultCallbacks;
 impl rustc_driver::Callbacks for DefaultCallbacks {}
 
 /// The top-level function that should be called by your internal driver binary.
-pub fn driver_main<T: RustcPlugin>(plugin: T) {
+pub fn driver_main<T: RustcPlugin>(plugin: T) -> ExitCode {
   let early_dcx = EarlyDiagCtxt::new(ErrorOutputType::default());
   rustc_driver::init_rustc_env_logger(&early_dcx);
 
-  exit(rustc_driver::catch_with_exit_code(move || {
+  rustc_driver::catch_with_exit_code(move || {
     let mut orig_args: Vec<String> = env::args().collect();
 
     let (have_sys_root_arg, sys_root) = get_sysroot(&orig_args);
@@ -157,7 +157,7 @@ is_target_crate={is_target_crate}"
       );
       rustc_driver::run_compiler(&args, &mut DefaultCallbacks);
     }
-  }))
+  })
 }
 
 fn is_target_crate(args: &[String]) -> bool {
