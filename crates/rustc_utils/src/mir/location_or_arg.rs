@@ -42,7 +42,9 @@ impl From<Local> for LocationOrArg {
 
 #[cfg(feature = "indexical")]
 pub mod index {
-  use indexical::{IndexedDomain, ToIndex, bitset::rustc::ArcIndexSet, define_index_type};
+  use indexical::{
+    IndexedDomain, ToIndex, bitset::rustc::ArcIndexSet, define_index_type,
+  };
 
   use super::*;
 
