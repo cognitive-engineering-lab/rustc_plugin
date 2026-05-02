@@ -11,7 +11,9 @@ use rustc_hir::{
 };
 use rustc_index::IndexVec;
 use rustc_middle::ty::TyCtxt;
-use rustc_span::{FileName, RealFileName, SourceFile, Span, source_map::SourceMap};
+use rustc_span::{
+  FileName, RemapPathScopeComponents, SourceFile, Span, source_map::SourceMap,
+};
 #[cfg(feature = "serde")]
 use serde::Serialize;
 #[cfg(feature = "ts-rs")]
@@ -141,9 +143,10 @@ impl FilenameIndex {
             .find(|name| match &name {
               // rustc seems to store relative paths to files in the workspace, so if filename is absolute,
               // we can compare them using Path::ends_with
-              FileName::Real(RealFileName::LocalPath(other)) => {
+              FileName::Real(real_file_name) => {
+                let other = real_file_name.path(RemapPathScopeComponents::empty()).to_path_buf();
                 let canonical = other.canonicalize();
-                let other = canonical.as_ref().unwrap_or(other);
+                let other = canonical.as_ref().unwrap_or(&other);
                 filename.ends_with(other)
               }
               _ => false,
@@ -155,8 +158,8 @@ impl FilenameIndex {
                 files
                   .iter()
                   .filter_map(|file| match &file.name {
-                    FileName::Real(RealFileName::LocalPath(other)) =>
-                      Some(format!("{}", other.display())),
+                    FileName::Real(other) =>
+                      Some(other.path(RemapPathScopeComponents::empty()).display().to_string()),
                     _ => None,
                   })
                   .collect::<Vec<_>>()
@@ -269,8 +272,9 @@ impl ByteRange {
       log::trace!("Converting to range: {span:?}");
       let file = source_map.lookup_source_file(span.lo());
       let filename = match &file.name {
-        FileName::Real(RealFileName::LocalPath(filename)) => {
-          Filename(filename.clone()).intern_with_ctx(&mut ctx)
+        FileName::Real(real_file_name) => {
+          let filename = real_file_name.path(RemapPathScopeComponents::empty());
+          Filename(filename.to_path_buf()).intern_with_ctx(&mut ctx)
         }
         filename => bail!("Range::from_span doesn't support {filename:?}"),
       };

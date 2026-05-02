@@ -6,18 +6,15 @@ use log::{trace, warn};
 use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_data_structures::fx::{FxHashMap as HashMap, FxHashSet as HashSet};
 use rustc_hir::def_id::DefId;
-use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::{
   mir::{
     Body, HasLocalDecls, Local, Location, Mutability, Place, PlaceElem, PlaceRef,
     ProjectionElem, RETURN_PLACE, VarDebugInfo, VarDebugInfoContents,
     visit::{PlaceContext, Visitor},
   },
-  traits::ObligationCause,
   ty::{self, AdtKind, Region, RegionKind, RegionVid, Ty, TyCtxt, TyKind, TypeVisitor},
 };
-use rustc_trait_selection::traits::NormalizeExt;
-use rustc_type_ir::TypingMode;
+use rustc_type_ir::Unnormalized;
 
 use crate::{AdtDefExt, SpanExt};
 
@@ -285,7 +282,7 @@ impl<'tcx> PlaceExt<'tcx> for Place<'tcx> {
         }
         ProjectionElem::Downcast(sym, _) => {
           let variant = sym.map(|s| s.to_string()).unwrap_or_else(|| "??".into());
-          (ElemPosition::Suffix, format!("@{variant}",).into())
+          (ElemPosition::Suffix, format!("@{variant}").into())
         }
 
         ProjectionElem::Index(_) => (ElemPosition::Suffix, "[_]".into()),
@@ -319,16 +316,10 @@ impl<'tcx> PlaceExt<'tcx> for Place<'tcx> {
   }
 
   fn normalize(&self, tcx: TyCtxt<'tcx>, def_id: DefId) -> Place<'tcx> {
-    let param_env = tcx.param_env(def_id);
-    let place = tcx.erase_regions(*self);
-    let infcx = tcx.infer_ctxt().build(TypingMode::post_borrowck_analysis(
-      tcx,
-      def_id.expect_local(),
-    ));
-    let place = infcx
-      .at(&ObligationCause::dummy(), param_env)
-      .normalize(place)
-      .value;
+    let place = tcx.normalize_erasing_regions(
+      tcx.typing_env_normalized_for_post_analysis(def_id),
+      Unnormalized::new_wip(*self),
+    );
 
     let projection = place
       .projection

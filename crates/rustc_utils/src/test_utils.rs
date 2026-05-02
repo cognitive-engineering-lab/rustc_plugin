@@ -46,6 +46,10 @@ impl FileLoader for StringLoader {
   fn read_binary_file(&self, path: &Path) -> io::Result<Arc<[u8]>> {
     Ok(fs::read(path)?.into())
   }
+
+  fn current_directory(&self) -> io::Result<std::path::PathBuf> {
+    Err(io::Error::new(io::ErrorKind::NotFound, "not found"))
+  }
 }
 
 static SYSROOT: LazyLock<String> = LazyLock::new(|| {

@@ -6,11 +6,10 @@ use rustc_borrowck::consumers::{BodyWithBorrowckFacts, ConsumerOptions};
 use rustc_data_structures::fx::FxHashSet as HashSet;
 use rustc_hir::def_id::LocalDefId;
 use rustc_middle::{
-  mir::{Body, ConcreteOpaqueTypes, StatementKind, TerminatorKind},
+  mir::{Body, StatementKind, TerminatorKind},
   ty::TyCtxt,
   util::Providers,
 };
-use rustc_span::ErrorGuaranteed;
 
 use crate::{BodyExt, block_timer, cache::Cache};
 
@@ -61,7 +60,7 @@ pub fn enable_mir_simplification() {
 /// For why we need to do override mir_borrowck, see:
 /// <https://github.com/rust-lang/rust/blob/485ced56b8753ec86936903f2a8c95e9be8996a1/src/test/run-make-fulldeps/obtain-borrowck/driver.rs>
 pub fn override_queries(_session: &rustc_session::Session, local: &mut Providers) {
-  local.mir_borrowck = mir_borrowck;
+  local.queries.mir_borrowck = mir_borrowck;
 }
 
 thread_local! {
@@ -71,7 +70,7 @@ thread_local! {
 fn mir_borrowck(
   tcx: TyCtxt<'_>,
   def_id: LocalDefId,
-) -> Result<&ConcreteOpaqueTypes<'_>, ErrorGuaranteed> {
+) -> rustc_middle::queries::mir_borrowck::ProvidedValue<'_> {
   block_timer!(&format!(
     "get_bodies_with_borrowck_facts for {}",
     tcx.def_path_debug_str(def_id.to_def_id())
@@ -96,8 +95,8 @@ fn mir_borrowck(
     });
   }
   let mut providers = Providers::default();
-  rustc_borrowck::provide(&mut providers);
-  let original_mir_borrowck = providers.mir_borrowck;
+  rustc_borrowck::provide(&mut providers.queries);
+  let original_mir_borrowck = providers.queries.mir_borrowck;
   original_mir_borrowck(tcx, def_id)
 }
 

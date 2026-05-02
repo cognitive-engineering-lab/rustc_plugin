@@ -12,13 +12,8 @@
 
 #![feature(
   rustc_private,
-  negative_impls,        // for !Send
   min_specialization,    // for rustc_index::newtype_index 
-  type_alias_impl_trait, // for iterators in traits
   box_patterns,          // for ergonomics
-  exact_size_is_empty,   // for graphviz module
-  impl_trait_in_assoc_type,
-  doc_auto_cfg,          // for feature gates in documentation
 )]
 #![warn(clippy::pedantic)]
 #![allow(
