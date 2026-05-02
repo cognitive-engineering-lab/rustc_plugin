@@ -42,7 +42,7 @@ impl From<Local> for LocationOrArg {
 
 #[cfg(feature = "indexical")]
 pub mod index {
-  use indexical::{IndexedDomain, ToIndex, bitset::rustc::IndexSet, define_index_type};
+  use indexical::{IndexedDomain, ToIndex, bitset::rustc::ArcIndexSet, define_index_type};
 
   use super::*;
 
@@ -50,7 +50,7 @@ pub mod index {
     pub struct LocationOrArgIndex for LocationOrArg = u32;
   }
 
-  pub type LocationOrArgSet = IndexSet<LocationOrArg>;
+  pub type LocationOrArgSet = ArcIndexSet<LocationOrArg>;
   pub type LocationOrArgDomain = IndexedDomain<LocationOrArg>;
 
   pub struct CustomMarker;

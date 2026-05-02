@@ -24,7 +24,7 @@ intervaltree = "0.2"
 serde = { version = "1", features = ["derive"], optional = true }
 textwrap = { version = "0.16", optional = true }
 ts-rs = { version = "7", optional = true }
-indexical = { version = "0.9.3", default-features = false, features = ["rustc"], optional = true }
+indexical = { version = "0.10.4", default-features = false, features = ["rustc"], optional = true }
 
 [dev-dependencies]
 rustc_utils = { path = ".", features = ["test"] }
