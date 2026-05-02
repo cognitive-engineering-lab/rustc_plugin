@@ -144,7 +144,7 @@ impl FilenameIndex {
               // rustc seems to store relative paths to files in the workspace, so if filename is absolute,
               // we can compare them using Path::ends_with
               FileName::Real(real_file_name) => {
-                let other = real_file_name.path(RemapPathScopeComponents::empty()).to_path_buf();
+                let other = real_file_name.path(RemapPathScopeComponents::DOCUMENTATION).to_path_buf();
                 let canonical = other.canonicalize();
                 let other = canonical.as_ref().unwrap_or(&other);
                 filename.ends_with(other)
@@ -159,7 +159,7 @@ impl FilenameIndex {
                   .iter()
                   .filter_map(|file| match &file.name {
                     FileName::Real(other) =>
-                      Some(other.path(RemapPathScopeComponents::empty()).display().to_string()),
+                      Some(other.path(RemapPathScopeComponents::DOCUMENTATION).display().to_string()),
                     _ => None,
                   })
                   .collect::<Vec<_>>()
@@ -273,7 +273,7 @@ impl ByteRange {
       let file = source_map.lookup_source_file(span.lo());
       let filename = match &file.name {
         FileName::Real(real_file_name) => {
-          let filename = real_file_name.path(RemapPathScopeComponents::empty());
+          let filename = real_file_name.path(RemapPathScopeComponents::DOCUMENTATION);
           Filename(filename.to_path_buf()).intern_with_ctx(&mut ctx)
         }
         filename => bail!("Range::from_span doesn't support {filename:?}"),

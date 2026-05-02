@@ -48,7 +48,7 @@ impl FileLoader for StringLoader {
   }
 
   fn current_directory(&self) -> io::Result<std::path::PathBuf> {
-    Err(io::Error::new(io::ErrorKind::NotFound, "not found"))
+    Ok(std::env::current_dir().unwrap())
   }
 }
 
