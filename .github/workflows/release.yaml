@@ -22,4 +22,4 @@ jobs:
           folder: ./target/doc
           target-folder: ${{ github.ref_name }}
       - name: Publish crates
-        run: cargo publish --workspace --from-git --yes --token ${{ secrets.CRATES_IO_TOKEN }}
+        run: cargo publish --workspace --token ${{ secrets.CRATES_IO_TOKEN }}

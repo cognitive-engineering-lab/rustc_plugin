@@ -13,19 +13,16 @@ rustc_private = true
 [features]
 serde = ["dep:serde"]
 test = ["dep:textwrap"]
-graphviz = ["dep:regex"]
 ts-rs = ["dep:ts-rs"]
 indexical = ["dep:indexical"]
 default = []
 
 [dependencies]
 anyhow = "1"
-log = "0.4"
+log = { workspace = true }
 intervaltree = "0.2"
-cfg-if = "1"
 serde = { version = "1", features = ["derive"], optional = true }
 textwrap = { version = "0.16", optional = true }
-regex = { version = "1", optional = true }
 ts-rs = { version = "7", optional = true }
 indexical = { version = "0.9.3", default-features = false, features = ["rustc"], optional = true }
 
