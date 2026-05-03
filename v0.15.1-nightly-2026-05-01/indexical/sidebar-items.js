@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"macro":["define_index_type"],"mod":["bitset","map","matrix","pointer","set","vec"],"struct":["IndexedDomain","MarkerIndex","MarkerOwned","MarkerRef"],"trait":["FromIndexicalIterator","IndexedValue","IndexicalIteratorExt","ToIndex"]};
