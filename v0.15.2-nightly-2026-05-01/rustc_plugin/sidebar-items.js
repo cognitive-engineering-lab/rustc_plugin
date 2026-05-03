@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["CHANNEL"],"enum":["CrateFilter"],"fn":["build_main","cli_main","driver_main"],"struct":["RustcPluginArgs"],"trait":["RustcPlugin"]};
