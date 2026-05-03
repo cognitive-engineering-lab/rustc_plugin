@@ -76,13 +76,13 @@ fn mir_borrowck(
     tcx.def_path_debug_str(def_id.to_def_id())
   ));
 
-  let mut body_with_facts = rustc_borrowck::consumers::get_bodies_with_borrowck_facts(
+  let mut bodies_with_facts = rustc_borrowck::consumers::get_bodies_with_borrowck_facts(
     tcx,
     def_id,
     ConsumerOptions::PoloniusInputFacts,
   );
 
-  for (def_id, mut body_with_facts) in body_with_facts.drain() {
+  for (def_id, mut body_with_facts) in bodies_with_facts.drain() {
     if SIMPLIFY_MIR.load(Ordering::SeqCst) {
       simplify_mir(&mut body_with_facts.body);
     }
@@ -94,6 +94,7 @@ fn mir_borrowck(
       cache.get(&def_id, |_| body_with_facts);
     });
   }
+
   let mut providers = Providers::default();
   rustc_borrowck::provide(&mut providers.queries);
   let original_mir_borrowck = providers.queries.mir_borrowck;
@@ -120,7 +121,10 @@ pub fn get_body_with_borrowck_facts<'tcx>(
     // of a checked body. We have to handle the case where the parent of the current `def_id` was checked,
     // or else rustc panics about a stolen body. Hence, we check for whether the cache contains the key already.
     if !cache.contains_key(&def_id) {
-      let _ = tcx.mir_borrowck(def_id);
+      // Note: as of nightly-2026-05-01, mir_borrowck will panic if passed a child of an item (eg a closure),
+      // so we have to make sure we call for the child's parent instead.
+      let checkable_def_id = if tcx.is_typeck_child(def_id.to_def_id()) { tcx.local_parent(def_id) } else { def_id };
+      let _ = tcx.mir_borrowck(checkable_def_id);
     }
 
     let body = cache.get(&def_id, |_| panic!("mir_borrowck override should have stored body for item: {def_id:?}. Are you sure you registered borrowck_facts::override_queries?"));

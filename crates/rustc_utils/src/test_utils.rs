@@ -193,7 +193,7 @@ where
     config.file_loader = Some(Box::new(StringLoader(self.input.clone())));
   }
 
-  fn after_analysis(
+  fn after_expansion(
     &mut self,
     _compiler: &rustc_interface::interface::Compiler,
     tcx: TyCtxt<'_>,
