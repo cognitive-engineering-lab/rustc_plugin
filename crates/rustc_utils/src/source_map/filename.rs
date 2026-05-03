@@ -8,21 +8,25 @@ pub struct Filename(pub PathBuf);
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 #[cfg_attr(feature = "ts-rs", derive(ts_rs::TS))]
-pub struct FilenameIndex(usize);
+pub struct FilenameIndex {
+  private_use_as_methods_instead: usize,
+}
 
 impl fmt::Debug for FilenameIndex {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(f, "f{}", self.0)
+    write!(f, "f{}", self.private_use_as_methods_instead)
   }
 }
 
 impl Idx for FilenameIndex {
   fn new(idx: usize) -> Self {
-    FilenameIndex(idx)
+    FilenameIndex {
+      private_use_as_methods_instead: idx,
+    }
   }
 
   fn index(self) -> usize {
-    self.0
+    self.private_use_as_methods_instead
   }
 }
 
