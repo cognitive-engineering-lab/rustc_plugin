@@ -108,12 +108,6 @@ pub fn driver_main<T: RustcPlugin>(plugin: T) -> ExitCode {
 
     let (have_sys_root_arg, sys_root) = get_sysroot(&orig_args);
 
-    if orig_args.iter().any(|a| a == "--version" || a == "-V") {
-      let version_info = rustc_tools_util::get_version_info!();
-      println!("{version_info}");
-      exit(0);
-    }
-
     // Setting RUSTC_WRAPPER causes Cargo to pass 'rustc' as the first argument.
     // We're invoking the compiler programmatically, so we ignore this
     let wrapper_mode =
@@ -122,6 +116,10 @@ pub fn driver_main<T: RustcPlugin>(plugin: T) -> ExitCode {
     if wrapper_mode {
       // we still want to be able to invoke it normally though
       orig_args.remove(1);
+    } else if orig_args.iter().any(|a| a == "--version" || a == "-V") {
+      let version_info = rustc_tools_util::get_version_info!();
+      println!("{version_info}");
+      exit(0);
     }
 
     // this conditional check for the --sysroot flag is there so users can call
