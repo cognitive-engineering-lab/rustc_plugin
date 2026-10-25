@@ -89,3 +89,13 @@ fn multi() -> Result<()> {
   run("workspaces/multi", |_cmd| {})?;
   Ok(())
 }
+
+#[test]
+fn dependency() -> Result<()> {
+  let output = run("workspaces/deps", |_cmd| {})?;
+  assert!(
+    output.contains(r#"There is an item "mul" of type "function""#),
+    "output:\n{output}"
+  );
+  Ok(())
+}

@@ -42,8 +42,13 @@ pub fn cli_main<T: RustcPlugin>(plugin: T) -> ExitCode {
     path.set_extension("exe");
   }
 
+  let wrapper = match args.filter {
+    CrateFilter::AllCrates => "RUSTC_WRAPPER",
+    _ => "RUSTC_WORKSPACE_WRAPPER",
+  };
+
   cmd
-    .env("RUSTC_WORKSPACE_WRAPPER", path)
+    .env(wrapper, path)
     .args(["check", "--target-dir"])
     .arg(&target_dir);
 
